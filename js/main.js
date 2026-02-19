@@ -157,7 +157,7 @@ function animate(time) {
             if (state.player.aircraftType &&
                 state.player.aircraftType.modelType === 'bomber' &&
                 state.bomberCameraMode === 'bombing') {
-                relativeOffset.set(0, -10, 5);
+                relativeOffset.set(0, 60, 5); // From above (Top-Down)
             }
 
             state.player.mesh.updateMatrixWorld();
