@@ -92,8 +92,8 @@ export function createEnemy() {
 
     state.enemies.push({
         mesh: enemy,
-        speed: 80,
-        cooldown: 4.0 + Math.random() * 3.0
+        speed: 40,
+        cooldown: 6.0 + Math.random() * 3.0
     });
 
     document.getElementById('enemy-count').innerText = state.enemies.length;
@@ -523,14 +523,14 @@ export function updateEnemies(dt) {
         const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(enemy.mesh.quaternion);
         // Simple turn towards player
         const desiredQ = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), toPlayer);
-        enemy.mesh.quaternion.rotateTowards(desiredQ, 1.0 * dt);
+        enemy.mesh.quaternion.rotateTowards(desiredQ, 0.5 * dt);
 
         enemy.mesh.position.addScaledVector(fwd, enemy.speed * dt); // Simple forward
 
         enemy.cooldown -= dt;
-        if (dist < 500 && enemy.cooldown <= 0) {
+        if (dist < 300 && enemy.cooldown <= 0) {
             shoot(enemy, 'enemy');
-            enemy.cooldown = 4 + Math.random();
+            enemy.cooldown = 6 + Math.random() * 2;
         }
     });
 }

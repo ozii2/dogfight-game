@@ -62,6 +62,8 @@ window.selectAircraft = function (type) {
                     state.antiAirs.length = 0;
                     spawnAntiAirs(response.antiAirs);
                 }
+                // Spawn local bot enemies for fun
+                for (let i = 0; i < 3; i++) createEnemy();
             } else {
                 console.error('Join failed:', response.error);
                 alert('Odaya katılamadı: ' + response.error);
