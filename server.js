@@ -9,14 +9,23 @@ const io = new Server(server, {
     cors: { origin: '*' }
 });
 
-// Serve static files
-app.use(express.static(path.join(__dirname)));
-
 // Explicit Robots.txt Handler (to fix Google blocking issues)
 app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.header('Pragma', 'no-cache');
+    res.header('Expires', '0');
     res.send("User-agent: *\nDisallow:\n\nSitemap: https://dogfight-game.onrender.com/sitemap.xml");
 });
+
+// Explicit Sitemap.xml Handler
+app.get('/sitemap.xml', (req, res) => {
+    res.type('application/xml');
+    res.sendFile(path.join(__dirname, 'sitemap.xml'));
+});
+
+// Serve static files
+app.use(express.static(path.join(__dirname)));
 
 // =====================
 // GAME STATE
