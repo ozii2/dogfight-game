@@ -18,6 +18,8 @@ export const state = {
     // Game Status
     gameStarted: false,
     isMultiplayer: false,
+    lastTime: 0,
+    lastSyncTime: 0,
     score: 0,
     killStreak: 0,
     lastKillTime: 0,
