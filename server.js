@@ -12,6 +12,12 @@ const io = new Server(server, {
 // Serve static files
 app.use(express.static(path.join(__dirname)));
 
+// Explicit Robots.txt Handler (to fix Google blocking issues)
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send("User-agent: *\nDisallow:\n\nSitemap: https://dogfight-game.onrender.com/sitemap.xml");
+});
+
 // =====================
 // GAME STATE
 // =====================
