@@ -608,6 +608,25 @@ export function updateBullets(dt) {
                     return;
                 }
             }
+            // Check Remote Players (PvP)
+            if (state.isMultiplayer && state.socket) {
+                state.remotePlayers.forEach((rp, rpId) => {
+                    if (!rp.mesh) return;
+                    const dist = b.mesh.position.distanceTo(rp.mesh.position);
+                    if (dist < 15) {
+                        // Hit!
+                        createExplosion(rp.mesh.position.clone(), 0xff4444, 20);
+                        state.socket.emit('hitPlayer', {
+                            targetId: rpId,
+                            damage: b.damage || 1,
+                            bulletId: b.id
+                        });
+                        state.scene.remove(b.mesh);
+                        state.bullets.splice(i, 1);
+                    }
+                });
+                if (!state.bullets[i]) return; // Bullet was removed
+            }
         } else if (b.type === 'enemy' || b.type === 'aa') {
             if (state.player && b.mesh.position.distanceTo(state.player.mesh.position) < 10) {
                 takeDamage(1);
