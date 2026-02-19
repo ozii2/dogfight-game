@@ -239,7 +239,7 @@ function setupSocketEvents() {
         const lbDiv = document.getElementById('leaderboard');
         const lbList = document.getElementById('lb-list');
         if (!lbDiv || !lbList) return;
-        if (state.gameStarted && state.isMultiplayer) {
+        if (data && data.length > 0) {
             lbDiv.style.display = 'block';
         }
         lbList.innerHTML = data.slice(0, 3).map((p, i) => {
