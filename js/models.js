@@ -567,29 +567,19 @@ export function createMissileMesh(color) {
 
 export function createBulletMesh(color) {
     const group = new THREE.Group();
-    // Core - Brighter & Larger
+    // Brighter color (Yellow/Orange)
     const mat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 6.0, 6), mat); // Doubled width, doubted length
+
+    // Tracer bullet body (larger)
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 3.0, 6), mat);
     body.rotateX(Math.PI / 2);
     group.add(body);
 
-    // Tip - Larger
+    // Glowing tip (much larger)
     const tipMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), tipMat);
-    tip.position.z = 3.2;
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), tipMat);
+    tip.position.z = 1.6;
     group.add(tip);
-
-    // Outer Glow (New)
-    const glowMat = new THREE.MeshBasicMaterial({
-        color: 0xffaa00,
-        transparent: true,
-        opacity: 0.4,
-        side: THREE.BackSide,
-        blending: THREE.AdditiveBlending
-    });
-    const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 8.0, 8), glowMat);
-    glow.rotateX(Math.PI / 2);
-    group.add(glow);
 
     return group;
 }
