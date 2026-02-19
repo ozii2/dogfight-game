@@ -660,7 +660,11 @@ export function updateBullets(dt) {
         // Ground hit
         const tH = getTerrainHeight(b.mesh.position.x, b.mesh.position.z);
         if (b.mesh.position.y < tH) {
-            createExplosion(b.mesh.position, 0xffff00, 20);
+            if (b.isBomb) {
+                createExplosion(b.mesh.position, 0xff4400, 100); // Huge explosion!
+            } else {
+                createExplosion(b.mesh.position, 0xffff00, 20);
+            }
             state.scene.remove(b.mesh);
             state.bullets.splice(i, 1);
         } else if (b.life <= 0) {

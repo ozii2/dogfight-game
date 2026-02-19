@@ -661,3 +661,27 @@ export function createBombMesh() {
 
     return group;
 }
+
+export function createBombSight() {
+    const group = new THREE.Group();
+    // Red Ring
+    const ringGeo = new THREE.RingGeometry(2, 2.5, 32);
+    ringGeo.rotateX(-Math.PI / 2); // Flat on ground initially? 
+    // Actually rotateX(-PI/2) makes it flat on XZ plane if standard Cylinder logic applies. 
+    // RingGeometry is in XY plane by default. So rotateX(-PI/2) puts it on XZ. Correct.
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    group.add(ring);
+
+    // Inner Cross
+    const crossGeo = new THREE.PlaneGeometry(4, 0.4);
+    crossGeo.rotateX(-Math.PI / 2);
+    const cross1 = new THREE.Mesh(crossGeo, ringMat);
+    group.add(cross1);
+
+    const cross2 = new THREE.Mesh(crossGeo, ringMat);
+    cross2.rotation.y = Math.PI / 2;
+    group.add(cross2);
+
+    return group;
+}

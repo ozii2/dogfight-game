@@ -7,6 +7,8 @@ import { initNetwork } from './network.js';
 import { updateFPS, updateHealthBar, updateWeaponUI, updateAmmoDisplay, updateCrosshair, updateRadar } from './ui.js';
 import { createPlayer, createEnemy, spawnAntiAirs, updatePlayer, updateEnemies, updateAntiAirs, updateBullets, updateParticles, updateDebris, updateRemotePlayers, tryPlayerShoot, createRemotePlayer, spawnPowerup, updatePowerups } from './entities.js';
 import { AIRCRAFT_TYPES } from './constants.js';
+import { createBombSight } from './models.js';
+import { getTerrainHeight } from './utils.js';
 
 // Global access for HTML buttons
 // Global access for HTML buttons
@@ -119,6 +121,10 @@ function init() {
     console.log('Initializing Network...');
     initNetwork();
 
+    state.bombSight = createBombSight();
+    state.scene.add(state.bombSight);
+    state.bombSight.visible = false;
+
     // Start Loop
     requestAnimationFrame(animate);
 }
@@ -173,6 +179,45 @@ function animate(time) {
             state.camera.position.z += (Math.random() - 0.5) * state.cameraShake;
             state.cameraShake -= dt * 5;
             if (state.cameraShake < 0) state.cameraShake = 0;
+        }
+
+        // Bomb Sight Update
+        if (state.bombSight) {
+            let showSight = false;
+            if (state.player && state.player.aircraftType &&
+                state.player.aircraftType.modelType === 'bomber' &&
+                state.bomberCameraMode === 'bombing') {
+
+                // Calculate Impact
+                const p = state.player.mesh.position;
+                const alt = p.y - getTerrainHeight(p.x, p.z); // Altitude above ground
+
+                if (alt > 0) {
+                    // 0.5*g*t^2 - v0y*t - h = 0
+                    // g=120, v0y=-10
+                    const delta = 100 + 4 * 60 * alt;
+                    const t = (-10 + Math.sqrt(delta)) / 120;
+
+                    // Horizontal Travel
+                    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(state.player.mesh.quaternion);
+                    const speed = (state.player.aircraftType.speed || 45) * 0.8;
+                    const dist = speed * t;
+
+                    const impactPos = p.clone().addScaledVector(fwd, dist);
+                    impactPos.y = getTerrainHeight(impactPos.x, impactPos.z) + 1.0;
+
+                    state.bombSight.position.copy(impactPos);
+                    state.bombSight.rotation.set(-Math.PI / 2, 0, 0); // Flat on XZ
+
+                    state.bombSight.visible = true;
+                    showSight = true;
+
+                    // Pulse
+                    const s = 1 + Math.sin(Date.now() * 0.005) * 0.2;
+                    state.bombSight.scale.set(s, s, s);
+                }
+            }
+            if (!showSight) state.bombSight.visible = false;
         }
 
         // Radar
