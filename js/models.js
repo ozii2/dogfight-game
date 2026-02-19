@@ -567,22 +567,29 @@ export function createMissileMesh(color) {
 
 export function createBulletMesh(color) {
     const group = new THREE.Group();
-    // Brighter color (Yellow/Orange)
+    // Core - Brighter & Larger
     const mat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-
-    // Tracer bullet body (larger)
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 3.0, 6), mat);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 6.0, 6), mat); // Doubled width, doubted length
     body.rotateX(Math.PI / 2);
     group.add(body);
 
-    // Glowing tip (much larger)
+    // Tip - Larger
     const tipMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), tipMat);
-    tip.position.z = 1.6;
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), tipMat);
+    tip.position.z = 3.2;
     group.add(tip);
 
-    // Add a light to the bullet for extra visibility (optional, might be expensive if too many)
-    // kept simple for performance
+    // Outer Glow (New)
+    const glowMat = new THREE.MeshBasicMaterial({
+        color: 0xffaa00,
+        transparent: true,
+        opacity: 0.4,
+        side: THREE.BackSide,
+        blending: THREE.AdditiveBlending
+    });
+    const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 8.0, 8), glowMat);
+    glow.rotateX(Math.PI / 2);
+    group.add(glow);
 
     return group;
 }
@@ -591,7 +598,13 @@ export function createBombMesh() {
     const group = new THREE.Group();
     const matBody = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.6, roughness: 0.4 });
     const matFin = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.4, roughness: 0.6 });
-    const matStripe = new THREE.MeshStandardMaterial({ color: 0xcc3333, metalness: 0.3, roughness: 0.5 });
+    const matStripe = new THREE.MeshStandardMaterial({
+        color: 0xff0000,
+        metalness: 0.3,
+        roughness: 0.5,
+        emissive: 0xff0000,
+        emissiveIntensity: 0.8
+    });
 
     // Main bomb body (fat cylinder)
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2.5, 10), matBody);
@@ -625,6 +638,14 @@ export function createBombMesh() {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.05, 6, 12), matFin);
     ring.position.z = -1.25;
     group.add(ring);
+
+    // Blinking Light (Red)
+    const lightGeo = new THREE.SphereGeometry(0.2, 8, 8);
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const light = new THREE.Mesh(lightGeo, lightMat);
+    light.position.z = -1.5;
+    light.name = 'bombLight';
+    group.add(light);
 
     return group;
 }

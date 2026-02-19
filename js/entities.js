@@ -560,7 +560,16 @@ export function updateBullets(dt) {
         const b = state.bullets[i];
         b.life -= dt;
 
-        if (b.isBomb) b.velocity.y -= 120 * dt;
+        if (b.isBomb) {
+            b.velocity.y -= 120 * dt;
+            // Blink light
+            const light = b.mesh.getObjectByName('bombLight');
+            if (light) {
+                const blink = Math.floor(Date.now() / 200) % 2 === 0;
+                light.visible = blink;
+                light.material.color.setHex(blink ? 0xff0000 : 0x440000);
+            }
+        }
 
         // Homing Logic... 
         if (b.isHoming && b.targetEnemy && state.enemies.includes(b.targetEnemy)) {
