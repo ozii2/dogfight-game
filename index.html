@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dogfight 3D</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+        }
+
+        /* Vignette overlay */
+        #vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+        }
+
+        /* Speed lines overlay */
+        #speed-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0;
+            transition: opacity 0.3s;
+            background: radial-gradient(ellipse at center, transparent 30%, rgba(200, 220, 255, 0.15) 70%, rgba(180, 200, 255, 0.3) 100%);
+        }
+
+        /* Kill streak notification */
+        #kill-streak {
+            position: fixed;
+            top: 25%;
+            left: 50%;
+            transform: translateX(-50%) scale(0.5);
+            color: #fbbf24;
+            font-family: 'Segoe UI', Impact, sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(255, 170, 0, 0.8), 0 0 40px rgba(255, 100, 0, 0.4), 2px 2px 4px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            letter-spacing: 3px;
+            text-align: center;
+        }
+
+        #kill-streak.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px black;
+            font-size: 16px;
+            user-select: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        #radar-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 180px;
+            height: 180px;
+            background: rgba(0, 20, 0, 0.6);
+            border: 2px solid #0f0;
+            border-radius: 50%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        #radar {
+            width: 100%;
+            height: 100%;
+        }
+
+        #controls-hint {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: 'Segoe UI', monospace;
+            font-size: 12px;
+            text-shadow: 1px 1px 2px black;
+            pointer-events: none;
+            z-index: 10;
+            letter-spacing: 1px;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: white;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+        }
+
+        #health-bar-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #health-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+            transition: width 0.3s ease;
+        }
+
+        #health-text {
+            position: absolute;
+            bottom: 48px;
+            left: 20px;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+            z-index: 10;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+
+        /* === AIRCRAFT SELECTION SCREEN === */
+        #aircraft-select {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a2e 0%, #1a1a4e 30%, #0d1b3e 60%, #0a0a2e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: auto;
+            /* Changed to auto to allow scrolling if needed */
+            padding: 20px;
+            box-sizing: border-box;
+            margin: 0;
+            text-align: center;
+        }
+
+        #aircraft-select::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        #aircraft-select h1 {
+            font-size: 48px;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            font-weight: 300;
+            text-shadow: 0 0 40px rgba(56, 189, 248, 0.5);
+            text-align: center;
+            width: 100%;
+        }
+
+        #aircraft-select .subtitle {
+            font-size: 16px;
+            color: #64748b;
+            margin-bottom: 50px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-align: center;
+            width: 100%;
+        }
+
+        .aircraft-cards {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .aircraft-card {
+            width: 280px;
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            cursor: pointer;
+            border-radius: 16px;
+            padding: 30px 24px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .aircraft-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .aircraft-card:hover {
+            transform: translateY(-12px) scale(1.03);
+            border-color: var(--accent-color);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px var(--glow-color);
+        }
+
+        .aircraft-card:hover::before {
+            opacity: 1;
+        }
+
+        .aircraft-card.fighter {
+            --accent-color: #38bdf8;
+            --glow-color: rgba(56, 189, 248, 0.2);
+        }
+
+        .aircraft-card.attack {
+            --accent-color: #4ade80;
+            --glow-color: rgba(74, 222, 128, 0.2);
+        }
+
+        .aircraft-card.bomber {
+            --accent-color: #f87171;
+            --glow-color: rgba(248, 113, 113, 0.2);
+        }
+
+        .aircraft-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 0 12px var(--glow-color));
+        }
+
+        .aircraft-card h2 {
+            font-size: 24px;
+            color: #f1f5f9;
+            margin: 0 0 4px 0;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .aircraft-card .type-label {
+            font-size: 11px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .aircraft-card .desc {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            width: 65px;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 10px;
+        }
+
+        .stat-bar-bg {
+            flex: 1;
+            height: 6px;
+            background: rgba(51, 65, 85, 0.6);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 0 8px;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--accent-color);
+            transition: width 0.6s ease;
+            box-shadow: 0 0 8px var(--glow-color);
+        }
+
+        .stat-value {
+            color: #cbd5e1;
+            width: 28px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .select-btn {
+            margin-top: 20px;
+            padding: 12px 40px;
+            background: linear-gradient(135deg, var(--accent-color), color-mix(in srgb, var(--accent-color) 60%, black));
+            border: none;
+            border-radius: 8px;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .select-btn:hover {
+            box-shadow: 0 0 30px var(--glow-color);
+            transform: scale(1.05);
+        }
+    </style>
+    <!-- Socket.io CDN -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <!-- Three.js CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <!-- LOBBY SCREEN -->
+    <div id="lobby-screen"
+        style="position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a2e,#1a1a4e);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;color:white;">
+        <h1 style="font-size:48px;margin:0;text-shadow:0 0 30px rgba(59,130,246,0.8);">✈ Dogfight 3D</h1>
+        <div style="color:#60a5fa;font-size:18px;margin-bottom:30px;">MULTIPLAYER</div>
+        <div
+            style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:30px;width:350px;">
+            <label style="display:block;margin-bottom:15px;">
+                <span style="color:#94a3b8;font-size:13px;">PILOT ADI</span>
+                <input id="playerNameInput" type="text" placeholder="Pilotun adını gir..."
+                    style="width:100%;padding:10px;margin-top:5px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:white;font-size:16px;outline:none;box-sizing:border-box;"
+                    value="">
+            </label>
+            <label style="display:block;margin-bottom:20px;">
+                <span style="color:#94a3b8;font-size:13px;">ODA ADI</span>
+                <input id="roomNameInput" type="text" placeholder="Oda adı gir veya boş bırak"
+                    style="width:100%;padding:10px;margin-top:5px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:white;font-size:16px;outline:none;box-sizing:border-box;"
+                    value="dogfight">
+            </label>
+            <button id="joinRoomBtn"
+                style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);border:none;border-radius:8px;color:white;font-size:16px;font-weight:bold;cursor:pointer;transition:all 0.2s;"
+                onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">ODAYA
+                KATIL →</button>
+            <div id="lobbyStatus" style="text-align:center;margin-top:15px;color:#94a3b8;font-size:13px;"></div>
+            <div id="roomPlayerList" style="margin-top:15px;"></div>
+        </div>
+    </div>
+
+    <!-- AIRCRAFT SELECTION SCREEN -->
+    <div id="aircraft-select" style="display:none;">
+        <h1>✈ Dogfight 3D</h1>
+        <div class="subtitle">Uçağını Seç</div>
+        <div class="aircraft-cards">
+            <!-- FIGHTER -->
+            <div class="aircraft-card fighter"
+                onclick="console.log('Fighter Clicked'); window.selectAircraft('fighter')">
+                <div class="aircraft-icon">🔹</div>
+                <h2>AVCI</h2>
+                <span class="type-label">Fighter</span>
+                <div class="desc">Hızlı ve çevik. İkiz makinalı tüfeklerle sürekli ateş eder. Dönerken bile tarama
+                    yapabilir!</div>
+                <div class="stat-row"><span class="stat-label">Hız</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:90%"></div>
+                    </div><span class="stat-value">90</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Can</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:60%"></div>
+                    </div><span class="stat-value">60</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Ateş</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:95%"></div>
+                    </div><span class="stat-value">95</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Hasar</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:55%"></div>
+                    </div><span class="stat-value">55</span>
+                </div>
+                <button class="select-btn">SEÇ</button>
+            </div>
+            <!-- ATTACK -->
+            <div class="aircraft-card attack" onclick="console.log('Attack Clicked'); window.selectAircraft('attack')">
+                <div class="aircraft-icon">💚</div>
+                <h2>TAARUZ</h2>
+                <span class="type-label">Attack</span>
+                <div class="desc">Dengeli bir savaş makinesi. İyi zırh, iyi ateş gücü. Her duruma uyum sağlar.</div>
+                <div class="stat-row"><span class="stat-label">Hız</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:65%"></div>
+                    </div><span class="stat-value">65</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Can</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:60%"></div>
+                    </div><span class="stat-value">60</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Ateş</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:60%"></div>
+                    </div><span class="stat-value">60</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Hasar</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:65%"></div>
+                    </div><span class="stat-value">65</span>
+                </div>
+                <button class="select-btn">SEÇ</button>
+            </div>
+            <!-- BOMBER -->
+            <div class="aircraft-card bomber" onclick="console.log('Bomber Clicked'); window.selectAircraft('bomber')">
+                <div class="aircraft-icon">🔴</div>
+                <h2>BOMBARDIMAN</h2>
+                <span class="type-label">Bomber</span>
+                <div class="desc">Ağır ve güçlü. Yavaş ama yıkıcı. Kalın zırhı sayesinde uzun süre hayatta kalır.</div>
+                <div class="stat-row"><span class="stat-label">Hız</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:40%"></div>
+                    </div><span class="stat-value">40</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Can</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:95%"></div>
+                    </div><span class="stat-value">95</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Ateş</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:30%"></div>
+                    </div><span class="stat-value">30</span>
+                </div>
+                <div class="stat-row"><span class="stat-label">Hasar</span>
+                    <div class="stat-bar-bg">
+                        <div class="stat-bar-fill" style="width:95%"></div>
+                    </div><span class="stat-value">95</span>
+                </div>
+                <button class="select-btn">SEÇ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="radar-container">
+        <canvas id="radar" width="200" height="200"></canvas>
+    </div>
+
+    <!-- Kill Feed -->
+    <div id="kill-feed"
+        style="position:fixed;top:20px;right:20px;z-index:100;font-family:'Segoe UI',sans-serif;pointer-events:none;">
+    </div>
+    <!-- Player List -->
+    <div id="player-list"
+        style="position:fixed;top:20px;right:220px;text-align:right;z-index:100;font-family:'Segoe UI',monospace;color:white;text-shadow:1px 1px 2px black;font-size:14px;pointer-events:none;display:none;">
+    </div>
+    <div id="hud">
+        Skor: <span id="score">0</span><br>
+        Oyuncular: <span id="enemy-count">0</span>
+        <div id="weapon-display" style="display:none; margin-top:8px;">
+            <div id="weapon-label" style="color:#22c55e; font-weight:bold;">Silah: FÜZE</div>
+            <div id="ammo-display" style="color:#fbbf24;">Füze: <span id="ammo-count">4</span>/4</div>
+            <div id="weapon-keys" style="color:#888; font-size:11px; margin-top:4px;">[1] Füze &nbsp; [2] Mermi</div>
+            <div id="camera-hint" style="display:none; color:#ff6b6b; font-size:11px; margin-top:2px;">[C] Kamera
+                Değiştir</div>
+        </div>
+        <div id="fps-counter" style="color:#666; font-size:12px; margin-top:4px;">FPS: 0</div>
+    </div>
+    <div id="health-text">CAN</div>
+    <div id="health-bar-container">
+        <div id="health-bar"></div>
+    </div>
+    <div id="crosshair">
+        <div class="dot"></div>
+    </div>
+    <div id="game-over" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:50;"></div>
+    <div id="error-log"
+        style="display:none;position:fixed;top:0;left:0;background:rgba(255,0,0,.5);color:white;padding:8px;font-family:monospace;z-index:999;max-height:200px;overflow:auto">
+    </div>
+    <div id="vignette"></div>
+    <div id="speed-lines"></div>
+    <div id="kill-streak"></div>
+    <div id="controls-hint">OKLAR/MOUSE: Yön | W/S: Hız | A/D: Yatay | SOL TIK/SPACE: Ateş | 1/2: Silah | C: Kamera
+    </div>
+
+    <div id="instructions"
+        style="position:fixed; top:50%; left:20px; transform:translateY(-50%); color:white; font-family:'Segoe UI', sans-serif; opacity:0.6; pointer-events:none; display:none;">
+        <div style="margin-bottom:10px;"><b>CONTROLS</b></div>
+        <div>Move Mouse: Pitch/Yaw</div>
+        <div>W/S: Speed Control</div>
+        <div>A/D: Roll / Yaw</div>
+        <div>Left Click / Space: Fire</div>
+    </div>
+
+    <!-- Main Module Entry Point -->
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
