@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://dogfight-game.onrender.com/sitemap.xml
