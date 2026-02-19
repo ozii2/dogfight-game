@@ -172,6 +172,85 @@
             opacity: 0.9;
         }
 
+        /* === LEADERBOARD === */
+        #leaderboard {
+            position: fixed;
+            top: 240px;
+            /* Under radar (200px + margin) */
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-family: 'Segoe UI', monospace;
+            color: white;
+            font-size: 13px;
+            z-index: 15;
+            min-width: 160px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+
+        #leaderboard h3 {
+            margin: 0 0 6px 0;
+            font-size: 12px;
+            color: #fbbf24;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .lb-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .lb-row.me {
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        .lb-rank {
+            width: 20px;
+            color: #888;
+        }
+
+        .lb-name {
+            flex: 1;
+            margin: 0 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lb-score {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        /* === POWER-UP NOTIFICATION === */
+        #powerup-notify {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translateX(-50%) scale(0.8);
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            color: #4ade80;
+            text-shadow: 0 0 15px rgba(74, 222, 128, 0.6), 2px 2px 4px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        #powerup-notify.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
         /* === AIRCRAFT SELECTION SCREEN === */
         #aircraft-select {
             position: fixed;
@@ -524,6 +603,15 @@
     <div id="kill-feed"
         style="position:fixed;top:20px;right:20px;z-index:100;font-family:'Segoe UI',sans-serif;pointer-events:none;">
     </div>
+
+    <!-- Leaderboard -->
+    <div id="leaderboard" style="display:none;">
+        <h3>🏆 SKOR TABLOSU</h3>
+        <div id="lb-list"></div>
+    </div>
+
+    <!-- Power-up Notification -->
+    <div id="powerup-notify"></div>
     <!-- Player List -->
     <div id="player-list"
         style="position:fixed;top:20px;right:220px;text-align:right;z-index:100;font-family:'Segoe UI',monospace;color:white;text-shadow:1px 1px 2px black;font-size:14px;pointer-events:none;display:none;">

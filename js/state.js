@@ -24,6 +24,8 @@ export const state = {
     killStreak: 0,
     lastKillTime: 0,
     lastJoinData: null,
+    powerups: [],
+    activePowerup: null, // { type, timer }
 
     // Multiplayer info
     socket: null,

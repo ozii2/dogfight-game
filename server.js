@@ -350,6 +350,18 @@ setInterval(() => {
     });
 }, 1000);
 
+// Leaderboard broadcast every 2 seconds
+setInterval(() => {
+    rooms.forEach((room) => {
+        const leaderboard = [];
+        room.players.forEach((p, id) => {
+            leaderboard.push({ id, name: p.name, score: p.score, alive: p.alive });
+        });
+        leaderboard.sort((a, b) => b.score - a.score);
+        io.to(room.id).emit('leaderboard', leaderboard);
+    });
+}, 2000);
+
 // =====================
 // START SERVER
 // =====================

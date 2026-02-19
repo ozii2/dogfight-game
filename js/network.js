@@ -233,4 +233,22 @@ function setupSocketEvents() {
         state.antiAirs.length = 0;
         spawnAntiAirs(data.aaUnits); // Pass server data
     });
+
+    // Leaderboard
+    socket.on('leaderboard', (data) => {
+        const lbDiv = document.getElementById('leaderboard');
+        const lbList = document.getElementById('lb-list');
+        if (!lbDiv || !lbList) return;
+        if (state.gameStarted && state.isMultiplayer) {
+            lbDiv.style.display = 'block';
+        }
+        lbList.innerHTML = data.slice(0, 3).map((p, i) => {
+            const isMe = p.id === state.myPlayerId;
+            return `<div class="lb-row ${isMe ? 'me' : ''}">
+                <span class="lb-rank">${i + 1}.</span>
+                <span class="lb-name">${p.name}</span>
+                <span class="lb-score">${p.score}</span>
+            </div>`;
+        }).join('');
+    });
 }

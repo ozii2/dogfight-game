@@ -5,7 +5,7 @@ import { initInput } from './input.js';
 import { initAudio } from './audio.js';
 import { initNetwork } from './network.js';
 import { updateFPS, updateHealthBar, updateWeaponUI, updateAmmoDisplay, updateCrosshair, updateRadar } from './ui.js';
-import { createPlayer, createEnemy, spawnAntiAirs, updatePlayer, updateEnemies, updateAntiAirs, updateBullets, updateParticles, updateDebris, updateRemotePlayers, tryPlayerShoot, createRemotePlayer } from './entities.js';
+import { createPlayer, createEnemy, spawnAntiAirs, updatePlayer, updateEnemies, updateAntiAirs, updateBullets, updateParticles, updateDebris, updateRemotePlayers, tryPlayerShoot, createRemotePlayer, spawnPowerup, updatePowerups } from './entities.js';
 import { AIRCRAFT_TYPES } from './constants.js';
 
 // Global access for HTML buttons
@@ -64,6 +64,17 @@ window.selectAircraft = function (type) {
                 }
                 // Spawn local bot enemies for fun
                 for (let i = 0; i < 3; i++) createEnemy();
+                // Respawn bots every 30 seconds (max 10)
+                setInterval(() => {
+                    if (state.enemies.length < 10) {
+                        for (let i = 0; i < 3; i++) createEnemy();
+                    }
+                }, 30000);
+                // Spawn power-ups
+                for (let i = 0; i < 5; i++) spawnPowerup();
+                setInterval(() => {
+                    if (state.powerups.length < 8) spawnPowerup();
+                }, 15000);
             } else {
                 console.error('Join failed:', response.error);
                 alert('Odaya katılamadı: ' + response.error);
@@ -137,6 +148,7 @@ function animate(time) {
         updateParticles(dt);
         updateDebris(dt);
         updateAntiAirs(dt);
+        updatePowerups(dt);
 
         // Camera Follow
         if (state.player && state.camera) {

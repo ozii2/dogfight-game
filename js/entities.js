@@ -466,8 +466,9 @@ export function updatePlayer(dt) {
         tryPlayerShoot();
     }
 
-    // Movement logic (simplified from index.html)
-    const baseSpeed = player.aircraftType.speed;
+    // Movement logic
+    let baseSpeed = player.aircraftType.speed;
+    if (state.activePowerup && state.activePowerup.type === 'speed') baseSpeed *= 1.5;
     const speed = state.keys['KeyW'] ? baseSpeed * 1.4 : (state.keys['KeyS'] ? baseSpeed * 0.6 : baseSpeed);
 
     let pitch = 0, roll = 0, yaw = 0;
@@ -478,9 +479,9 @@ export function updatePlayer(dt) {
     if (state.keys['KeyA']) yaw = 1;
     if (state.keys['KeyD']) yaw = -1;
 
-    player.mesh.rotateX(pitch * 2.0 * dt);
-    player.mesh.rotateZ(roll * 2.5 * dt);
-    player.mesh.rotateY(yaw * 1.5 * dt);
+    player.mesh.rotateX(pitch * 1.0 * dt);
+    player.mesh.rotateZ(roll * 2.2 * dt);
+    player.mesh.rotateY(yaw * 1.0 * dt);
 
     const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(player.mesh.quaternion);
     player.mesh.position.addScaledVector(fwd, speed * dt);
@@ -798,6 +799,104 @@ export function removeRemotePlayer(id) {
         const rp = state.remotePlayers.get(id);
         state.scene.remove(rp.mesh);
         state.remotePlayers.delete(id);
+    }
+}
+
+// =====================
+// POWER-UPS
+// =====================
+const POWERUP_TYPES = [
+    { type: 'speed', color: 0x3b82f6, label: '⚡ HIZ ARTIŞI!', duration: 8 },
+    { type: 'health', color: 0x22c55e, label: '💚 CAN YENİLENDİ!', duration: 0 },
+    { type: 'damage', color: 0xef4444, label: '💥 ÇİFT HASAR!', duration: 8 }
+];
+
+export function spawnPowerup() {
+    const pType = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+
+    // Create floating box
+    const geo = new THREE.BoxGeometry(5, 5, 5);
+    const mat = new THREE.MeshPhongMaterial({
+        color: pType.color,
+        emissive: pType.color,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0.8
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    // Random position on map
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 100 + Math.random() * 600;
+    mesh.position.set(
+        Math.sin(angle) * dist,
+        60 + Math.random() * 80,
+        Math.cos(angle) * dist
+    );
+
+    state.scene.add(mesh);
+    state.powerups.push({
+        mesh,
+        type: pType.type,
+        label: pType.label,
+        duration: pType.duration,
+        baseY: mesh.position.y,
+        time: 0
+    });
+}
+
+export function updatePowerups(dt) {
+    // Animate & check collection
+    for (let i = state.powerups.length - 1; i >= 0; i--) {
+        const pu = state.powerups[i];
+        pu.time += dt;
+
+        // Bob up and down + rotate
+        pu.mesh.position.y = pu.baseY + Math.sin(pu.time * 2) * 3;
+        pu.mesh.rotation.y += dt * 2;
+        pu.mesh.rotation.x += dt * 0.5;
+
+        // Check player collision
+        if (state.player && state.player.mesh) {
+            const dist = pu.mesh.position.distanceTo(state.player.mesh.position);
+            if (dist < 20) {
+                collectPowerup(pu);
+                state.scene.remove(pu.mesh);
+                state.powerups.splice(i, 1);
+            }
+        }
+    }
+
+    // Update active powerup timer
+    if (state.activePowerup) {
+        state.activePowerup.timer -= dt;
+        if (state.activePowerup.timer <= 0) {
+            state.activePowerup = null;
+        }
+    }
+}
+
+function collectPowerup(pu) {
+    createExplosion(pu.mesh.position.clone(), 0xffff00, 15);
+
+    if (pu.type === 'health') {
+        // Heal to full
+        if (state.player) {
+            state.player.health = state.player.maxHealth;
+            updateHealthBar();
+        }
+    } else if (pu.type === 'speed') {
+        state.activePowerup = { type: 'speed', timer: pu.duration };
+    } else if (pu.type === 'damage') {
+        state.activePowerup = { type: 'damage', timer: pu.duration };
+    }
+
+    // Show notification
+    const notify = document.getElementById('powerup-notify');
+    if (notify) {
+        notify.textContent = pu.label;
+        notify.className = 'show';
+        setTimeout(() => { notify.className = ''; }, 2000);
     }
 }
 
