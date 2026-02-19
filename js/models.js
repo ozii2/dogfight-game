@@ -565,21 +565,43 @@ export function createMissileMesh(color) {
     return group;
 }
 
-export function createBulletMesh(color) {
+export function createBulletMesh(color, isHeavy = false) {
     const group = new THREE.Group();
     // Brighter color (Yellow/Orange)
     const mat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
 
-    // Tracer bullet body (larger)
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 3.0, 6), mat);
-    body.rotateX(Math.PI / 2);
-    group.add(body);
+    if (isHeavy) {
+        // === HEAVY BULLET (Attack / Bomber) - Large & Glow ===
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 6.0, 6), mat);
+        body.rotateX(Math.PI / 2);
+        group.add(body);
 
-    // Glowing tip (much larger)
-    const tipMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), tipMat);
-    tip.position.z = 1.6;
-    group.add(tip);
+        const tipMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), tipMat);
+        tip.position.z = 3.2;
+        group.add(tip);
+
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0xffaa00,
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.BackSide,
+            blending: THREE.AdditiveBlending
+        });
+        const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 8.0, 8), glowMat);
+        glow.rotateX(Math.PI / 2);
+        group.add(glow);
+    } else {
+        // === STANDARD BULLET (Fighter) - Small ===
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 3.0, 6), mat);
+        body.rotateX(Math.PI / 2);
+        group.add(body);
+
+        const tipMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), tipMat);
+        tip.position.z = 1.6;
+        group.add(tip);
+    }
 
     return group;
 }

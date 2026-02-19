@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state, setPlayer } from './state.js';
 import { AIRCRAFT_TYPES } from './constants.js';
 import { createRemotePlayer, removeRemotePlayer, spawnAntiAirs, createExplosion, createDebris, registerKill } from './entities.js';
+import { createBulletMesh } from './models.js';
 import { updateHealthBar, showKillFeed, updateScore } from './ui.js';
 import { addShake } from './graphics.js';
 
@@ -133,10 +134,28 @@ function setupSocketEvents() {
     socket.on('bulletSpawned', (bullet) => {
         if (bullet.ownerId === state.myPlayerId) return;
 
+        // Determine type of bullet (Heavy vs Standard) based on owner
+        let isHeavy = false;
+        const owner = state.remotePlayers.get(bullet.ownerId);
+        if (owner && owner.data && owner.data.aircraftType) {
+            const type = owner.data.aircraftType; // Data stores 'fighter', 'attack', etc. directly?
+            // Wait, joinData sends "aircraftType: type" (string 'fighter', 'attack')
+            if (type === 'attack' || type === 'bomber') isHeavy = true;
+        }
+
         const geo = new THREE.SphereGeometry(0.3, 4, 4);
-        const mat = new THREE.MeshBasicMaterial({ color: 0xff4444 });
-        const mesh = new THREE.Mesh(geo, mat);
+        // Use proper bullet mesh
+        const mesh = createBulletMesh(0xff4444, isHeavy);
+
         mesh.position.set(bullet.position.x, bullet.position.y, bullet.position.z);
+
+        // Remote bullets need rotation from velocity
+        const vel = new THREE.Vector3(bullet.velocity.x, bullet.velocity.y, bullet.velocity.z);
+        if (vel.lengthSq() > 0.1) {
+            const qt = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), vel.clone().normalize());
+            mesh.quaternion.copy(qt);
+        }
+
         state.scene.add(mesh);
 
         state.bullets.push({
