@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { state, setPlayer } from './state.js';
 import { getTerrainHeight } from './utils.js';
 import { AIRCRAFT_TYPES, STREAK_NAMES, KILL_STREAK_TIMEOUT, SYNC_RATE } from './constants.js';
-import { playShootSound, playExplodeSound, initAudio } from './audio.js';
+import { playShootSound, playExplodeSound, playImpactSound, initAudio } from './audio.js';
 import { updateHealthBar, updateScore, showKillFeed, showKillStreak, updateWeaponUI, updateAmmoDisplay, showDamageFlash, updateFPS } from './ui.js';
 import { addShake } from './graphics.js';
 import { createJetMesh, createAntiAirMesh, createMissileMesh, createBulletMesh, createBombMesh } from './models.js';
@@ -598,6 +598,7 @@ export function updateBullets(dt) {
             for (let j = state.enemies.length - 1; j >= 0; j--) {
                 const e = state.enemies[j];
                 if (b.mesh.position.distanceTo(e.mesh.position) < 15) {
+                    playImpactSound();
                     createExplosion(e.mesh.position, 0xff0000, 30);
                     createDebris(e.mesh.position);
                     state.score += 100;
@@ -650,6 +651,7 @@ export function updateBullets(dt) {
             }
         } else if (b.type === 'enemy' || b.type === 'aa') {
             if (state.player && b.mesh.position.distanceTo(state.player.mesh.position) < 10) {
+                playImpactSound();
                 takeDamage(1);
                 state.scene.remove(b.mesh);
                 state.bullets.splice(i, 1);
