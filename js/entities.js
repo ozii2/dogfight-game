@@ -277,13 +277,13 @@ export function tryPlayerShoot() {
             state.missileAmmo--;
             updateAmmoDisplay();
         } else {
-            shootCannon(state.player, 'player');
+            shootBullet(state.player, 'player');
         }
     } else if (weaponType === 'bomber') {
         if (state.bomberWeaponMode === 1) {
             dropBomb(state.player, 'player');
         } else {
-            shootCannon(state.player, 'player');
+            shootBullet(state.player, 'player');
         }
     } else {
         shoot(state.player, 'player');
