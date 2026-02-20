@@ -306,17 +306,7 @@ function shootBullet(sourceObj, type) {
     const wingOffsets = [new THREE.Vector3(-2.5, -0.3, 2), new THREE.Vector3(2.5, -0.3, 2)];
 
     for (const wingOff of wingOffsets) {
-        // Determine bullet style ( Heavy for Attack/Bomber )
-        let isHeavy = false;
-        if (sourceObj.aircraftType) {
-            const type = sourceObj.aircraftType.modelType;
-            if (type === 'attack' || type === 'bomber') isHeavy = true;
-        } else if (sourceObj.type) {
-            // Independent enemy object might store type directly
-            if (sourceObj.type === 'attack' || sourceObj.type === 'bomber') isHeavy = true;
-        }
-
-        const bullet = createBulletMesh(color, isHeavy);
+        const bullet = createBulletMesh(color, false); // Standard bullet for all types
         const offset = wingOff.clone().applyQuaternion(sourceObj.mesh.quaternion);
         bullet.position.copy(sourceObj.mesh.position).add(offset);
         bullet.quaternion.copy(sourceObj.mesh.quaternion);
