@@ -214,7 +214,7 @@ export function createExplosion(position, color, count) {
         playExplodeSound();
     } else {
         addShake(0.3);
-        playExplodeSound();
+        // No loud sound for small impacts
     }
 }
 
@@ -665,7 +665,8 @@ export function updateBullets(dt) {
             if (b.isBomb) {
                 createExplosion(b.mesh.position, 0xff4400, 100); // Huge explosion!
             } else {
-                createExplosion(b.mesh.position, 0xffff00, 20);
+                playImpactSound(); // Quiet tick for bullets
+                createExplosion(b.mesh.position, 0xffff00, 10); // Small visual only
             }
             state.scene.remove(b.mesh);
             state.bullets.splice(i, 1);
