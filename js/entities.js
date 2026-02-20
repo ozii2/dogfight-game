@@ -380,7 +380,7 @@ function shootSingleMissile(sourceObj, type) {
 
     // Find nearest enemy within 35° cone in front of aircraft
     let target = null;
-    let minDist = 500; // Max lock-on range
+    let minDist = 900; // Max lock-on range
     const lockAngle = Math.cos(35 * Math.PI / 180); // 35 degree half-angle
 
     for (const e of state.enemies) {
