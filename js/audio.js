@@ -133,47 +133,24 @@ export function playExplodeSound() {
     crackle.stop(now + 0.4);
 }
 
-// NEW: Metallic impact sound (bullet hitting target)
+// Subtle "tick" sound (bullet hit)
 export function playImpactSound() {
     if (!isAudioInit || !state.audioCtx) return;
     const ctx = state.audioCtx;
     const now = ctx.currentTime;
 
-    // Sharp metallic ping
+    // Very short, quiet click
     const osc = ctx.createOscillator();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(800 + Math.random() * 400, now);
-    osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200 + Math.random() * 300, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.04);
 
-    const oscGain = ctx.createGain();
-    oscGain.gain.setValueAtTime(0.15, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.08, now); // Very quiet
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
-    // Tiny noise for impact texture
-    const impLen = ctx.sampleRate * 0.05;
-    const impBuf = ctx.createBuffer(1, impLen, ctx.sampleRate);
-    const impData = impBuf.getChannelData(0);
-    for (let i = 0; i < impLen; i++) {
-        const t = i / impLen;
-        impData[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 6);
-    }
-    const impSrc = ctx.createBufferSource();
-    impSrc.buffer = impBuf;
-
-    const impGain = ctx.createGain();
-    impGain.gain.setValueAtTime(0.2, now);
-
-    const hpf = ctx.createBiquadFilter();
-    hpf.type = 'highpass';
-    hpf.frequency.value = 3000;
-
-    osc.connect(oscGain);
-    oscGain.connect(ctx.destination);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.15);
-
-    impSrc.connect(hpf);
-    hpf.connect(impGain);
-    impGain.connect(ctx.destination);
-    impSrc.start(now);
+    osc.stop(now + 0.05);
 }
