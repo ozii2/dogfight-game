@@ -377,10 +377,38 @@ function shootSingleMissile(sourceObj, type) {
     const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(sourceObj.mesh.quaternion);
 
     state.scene.add(missile);
+
+    // Find nearest enemy within 35° cone in front of aircraft
+    let target = null;
+    let minDist = 500; // Max lock-on range
+    const lockAngle = Math.cos(35 * Math.PI / 180); // 35 degree half-angle
+
+    for (const e of state.enemies) {
+        const toEnemy = new THREE.Vector3().subVectors(e.mesh.position, missile.position).normalize();
+        const dot = fwd.dot(toEnemy); // cos(angle between fwd and enemy)
+        if (dot > lockAngle) { // Within 35° cone
+            const d = missile.position.distanceTo(e.mesh.position);
+            if (d < minDist) { minDist = d; target = e; }
+        }
+    }
+    // Also check remote players in multiplayer
+    if (state.isMultiplayer) {
+        state.remotePlayers.forEach((rp) => {
+            if (!rp.mesh) return;
+            const toEnemy = new THREE.Vector3().subVectors(rp.mesh.position, missile.position).normalize();
+            const dot = fwd.dot(toEnemy);
+            if (dot > lockAngle) {
+                const d = missile.position.distanceTo(rp.mesh.position);
+                if (d < minDist) { minDist = d; target = rp; }
+            }
+        });
+    }
+
     state.bullets.push({
         mesh: missile, velocity: fwd.multiplyScalar(350), life: 4.0, type: type,
         damage: isPlayer ? (state.player.damage || 2) : 1,
-        isHoming: true, isBullet: false, isBomb: false
+        isHoming: true, isBullet: false, isBomb: false,
+        targetEnemy: target
     });
 }
 
@@ -572,12 +600,23 @@ export function updateBullets(dt) {
             }
         }
 
-        // Homing Logic... 
-        if (b.isHoming && b.targetEnemy && state.enemies.includes(b.targetEnemy)) {
-            const desired = new THREE.Vector3().subVectors(b.targetEnemy.mesh.position, b.mesh.position).normalize();
-            const curr = b.velocity.clone().normalize();
-            curr.lerp(desired, 5 * dt).normalize();
-            b.velocity.copy(curr.multiplyScalar(b.velocity.length()));
+        // Homing Logic
+        if (b.isHoming && b.targetEnemy && b.targetEnemy.mesh) {
+            // Verify target is still alive (in enemies list or remote players)
+            const isAlive = state.enemies.includes(b.targetEnemy) ||
+                (state.remotePlayers && state.remotePlayers.has &&
+                    Array.from(state.remotePlayers.values()).includes(b.targetEnemy));
+
+            if (isAlive) {
+                const desired = new THREE.Vector3().subVectors(b.targetEnemy.mesh.position, b.mesh.position).normalize();
+                const curr = b.velocity.clone().normalize();
+                curr.lerp(desired, 3 * dt).normalize(); // Gentle tracking
+                b.velocity.copy(curr.multiplyScalar(b.velocity.length()));
+                // Rotate missile to face direction
+                b.mesh.lookAt(b.mesh.position.clone().add(b.velocity));
+            } else {
+                b.targetEnemy = null; // Target destroyed, fly straight
+            }
         }
 
         b.mesh.position.addScaledVector(b.velocity, dt);
