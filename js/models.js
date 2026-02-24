@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 // --- 3D Model Preloading ---
-const loadedModels = {};
+export const loadedModels = {};
 const gltfLoader = new GLTFLoader();
 const fbxLoader = new FBXLoader();
 
@@ -74,7 +74,9 @@ export function preloadModels() {
     return Promise.all([
         loadModel('models/wwii_soviet_plane_with_interior.glb', 'fighter', 150),
         loadModel('models/Rafael.gltf', 'attack', 40),
-        loadFBXModel('models/Bomber.fbx', 'bomber', 25)
+        loadFBXModel('models/Bomber.fbx', 'bomber', 25),
+        loadModel('models/House.glb', 'house', 12),
+        loadFBXModel('models/Skyscraper.fbx', 'skyscraper', 80)
     ]);
 }
 
