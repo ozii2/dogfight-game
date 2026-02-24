@@ -115,9 +115,9 @@ export function spawnAntiAirs(serverData) {
                 mesh: mesh,
                 health: data.health || 3,
                 cooldown: 0,
-                fireRate: 0.3,
+                fireRate: 0.6,
                 range: 400,
-                damage: 1,
+                damage: 0.5,
                 id: data.id
             });
         });

@@ -645,6 +645,7 @@ export function createAntiAirMesh() {
     turretGroup.add(warn);
 
     group.userData.turret = turretGroup;
+    group.scale.set(3, 3, 3);
     return group;
 }
 
