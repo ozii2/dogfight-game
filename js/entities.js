@@ -501,8 +501,9 @@ export function updatePlayer(dt) {
     const speed = state.keys['KeyW'] ? baseSpeed * 1.4 : (state.keys['KeyS'] ? baseSpeed * 0.6 : baseSpeed);
 
     let pitch = 0, roll = 0, yaw = 0;
-    if (state.keys['ArrowUp']) pitch = -1;
-    if (state.keys['ArrowDown']) pitch = 1;
+    const inv = window.invertedControls ? 1 : -1;
+    if (state.keys['ArrowUp']) pitch = inv;
+    if (state.keys['ArrowDown']) pitch = -inv;
     if (state.keys['ArrowLeft']) roll = -1;
     if (state.keys['ArrowRight']) roll = 1;
     if (state.keys['KeyA']) yaw = 1;

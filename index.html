@@ -584,6 +584,13 @@
     <div id="aircraft-select" style="display:none;">
         <h1>✈ Dogfight 3D</h1>
         <div class="subtitle">Uçağını Seç</div>
+        <div style="text-align:center;margin-bottom:20px;">
+            <button id="invertControlsBtn"
+                onclick="window.invertedControls = !window.invertedControls; this.classList.toggle('active'); this.innerHTML = window.invertedControls ? '🔄 Kontroller: TERS (Üst Ok = Alçal)' : '🎮 Kontroller: NORMAL (Üst Ok = Yüksel)';"
+                style="padding:10px 24px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);border-radius:8px;color:white;font-size:14px;cursor:pointer;transition:all 0.3s;">🎮
+                Kontroller: NORMAL (Üst Ok = Yüksel)</button>
+        </div>
+        <script>window.invertedControls = false;</script>
         <div class="aircraft-cards">
             <!-- FIGHTER -->
             <div class="aircraft-card fighter"

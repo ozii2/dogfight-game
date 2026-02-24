@@ -63,6 +63,9 @@ window.selectAircraft = function (type) {
                     state.antiAirs.forEach(aa => state.scene.remove(aa.mesh));
                     state.antiAirs.length = 0;
                     spawnAntiAirs(response.antiAirs);
+                } else {
+                    // Server didn't provide AA, spawn locally
+                    spawnAntiAirs();
                 }
                 // Spawn local bot enemies for fun
                 for (let i = 0; i < 3; i++) createEnemy();
