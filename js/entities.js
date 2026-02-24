@@ -104,12 +104,12 @@ export function spawnAntiAirs(serverData) {
     if (serverData) {
         // Server provided positions - calculate terrain height on client
         serverData.forEach(data => {
-            if (data.alive === false) return; // Skip destroyed ones
+            if (data.alive === false) return;
             const y = getTerrainHeight(data.x, data.z);
-            if (y < 2) return; // Skip underwater positions
+            if (y < -15) return; // Skip deep water only
 
             const mesh = createAntiAirMesh();
-            mesh.position.set(data.x, y, data.z);
+            mesh.position.set(data.x, Math.max(y, 0), data.z);
             state.scene.add(mesh);
             state.antiAirs.push({
                 mesh: mesh,
@@ -122,23 +122,23 @@ export function spawnAntiAirs(serverData) {
             });
         });
     } else {
-        // Local generation - spawn near city on land
+        // Local generation - spawn around the map on land
         const targetCount = 15;
         let spawned = 0;
         let attempts = 0;
 
-        while (spawned < targetCount && attempts < 200) {
+        while (spawned < targetCount && attempts < 300) {
             attempts++;
             const angle = Math.random() * Math.PI * 2;
-            const dist = 100 + Math.random() * 500; // Closer to city
+            const dist = 150 + Math.random() * 800;
             const x = Math.sin(angle) * dist;
             const z = Math.cos(angle) * dist;
             const y = getTerrainHeight(x, z);
 
-            if (y < 2) continue; // Must be on land (above water)
+            if (y < -15) continue; // Skip deep water only
 
             const mesh = createAntiAirMesh();
-            mesh.position.set(x, y, z);
+            mesh.position.set(x, Math.max(y, 0), z);
             state.scene.add(mesh);
 
             state.antiAirs.push({
@@ -151,6 +151,7 @@ export function spawnAntiAirs(serverData) {
             });
             spawned++;
         }
+        console.log(`AA spawn: ${spawned} placed after ${attempts} attempts`);
     }
     console.log(`Anti-Air systems spawned: ${state.antiAirs.length}`);
 }
