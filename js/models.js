@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 // --- 3D Model Preloading ---
 const loadedModels = {};
 const gltfLoader = new GLTFLoader();
+const fbxLoader = new FBXLoader();
 
 function loadModel(path, key, targetSize) {
     return new Promise((resolve) => {
@@ -37,10 +39,42 @@ function loadModel(path, key, targetSize) {
     });
 }
 
+function loadFBXModel(path, key, targetSize) {
+    return new Promise((resolve) => {
+        fbxLoader.load(
+            path,
+            (fbx) => {
+                const box = new THREE.Box3().setFromObject(fbx);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = targetSize / maxDim;
+                fbx.scale.set(scale, scale, scale);
+                const center = box.getCenter(new THREE.Vector3());
+                fbx.position.sub(center.multiplyScalar(scale));
+                fbx.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                loadedModels[key] = fbx;
+                console.log(`${key} 3D model loaded!`);
+                resolve();
+            },
+            undefined,
+            (err) => {
+                console.warn(`${key} model load failed, using fallback:`, err);
+                resolve();
+            }
+        );
+    });
+}
+
 export function preloadModels() {
     return Promise.all([
         loadModel('models/wwii_soviet_plane_with_interior.glb', 'fighter', 150),
-        loadModel('models/Rafael.gltf', 'attack', 40)
+        loadModel('models/Rafael.gltf', 'attack', 40),
+        loadFBXModel('models/Bomber.fbx', 'bomber', 25)
     ]);
 }
 
