@@ -102,14 +102,18 @@ export function createEnemy() {
 
 export function spawnAntiAirs(serverData) {
     if (serverData) {
-        // Server provided positions
+        // Server provided positions - calculate terrain height on client
         serverData.forEach(data => {
+            if (data.alive === false) return; // Skip destroyed ones
+            const y = getTerrainHeight(data.x, data.z);
+            if (y < 2) return; // Skip underwater positions
+
             const mesh = createAntiAirMesh();
-            mesh.position.set(data.x, data.y, data.z);
+            mesh.position.set(data.x, y, data.z);
             state.scene.add(mesh);
             state.antiAirs.push({
                 mesh: mesh,
-                health: 3,
+                health: data.health || 3,
                 cooldown: 0,
                 fireRate: 0.3,
                 range: 400,
@@ -118,16 +122,20 @@ export function spawnAntiAirs(serverData) {
             });
         });
     } else {
-        // Local generation
-        const count = 15;
-        for (let i = 0; i < count; i++) {
+        // Local generation - spawn near city on land
+        const targetCount = 15;
+        let spawned = 0;
+        let attempts = 0;
+
+        while (spawned < targetCount && attempts < 200) {
+            attempts++;
             const angle = Math.random() * Math.PI * 2;
-            const dist = 200 + Math.random() * 1000;
+            const dist = 100 + Math.random() * 500; // Closer to city
             const x = Math.sin(angle) * dist;
             const z = Math.cos(angle) * dist;
             const y = getTerrainHeight(x, z);
 
-            if (y < -5) continue;
+            if (y < 2) continue; // Must be on land (above water)
 
             const mesh = createAntiAirMesh();
             mesh.position.set(x, y, z);
@@ -141,8 +149,10 @@ export function spawnAntiAirs(serverData) {
                 range: 400,
                 damage: 1
             });
+            spawned++;
         }
     }
+    console.log(`Anti-Air systems spawned: ${state.antiAirs.length}`);
 }
 
 export function createExplosion(position, color, count) {
