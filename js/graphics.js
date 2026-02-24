@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { state, setScene, setCamera, setRenderer } from './state.js';
 import { getTerrainHeight, noise } from './utils.js';
-import { loadedModels } from './models.js';
 
 export function onWindowResize() {
     if (!state.camera || !state.renderer) return;
@@ -298,48 +297,36 @@ export function createBuildings() {
                     d = 15 + Math.random() * 10;
                     h = 60 + Math.random() * 100 * centerFactor;
 
-                    if (loadedModels.skyscraper) {
-                        const clone = loadedModels.skyscraper.clone();
-                        const scaleFactor = h / 80; // Vary height
-                        clone.scale.copy(loadedModels.skyscraper.scale).multiplyScalar(scaleFactor);
-                        clone.rotation.y = Math.random() * Math.PI * 2;
-                        building.add(clone);
-                    } else {
-                        const localTex = windowTex.clone();
-                        localTex.repeat.set(1, h / 10);
-                        localTex.needsUpdate = true;
-                        const matWall = new THREE.MeshLambertMaterial({ map: localTex });
-                        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [matWall, matWall, matConcrete, matConcrete, matWall, matWall]);
-                        mesh.castShadow = true;
-                        mesh.position.y = h / 2;
-                        building.add(mesh);
-                        const antH = 5 + Math.random() * 15;
-                        const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, antH, 4), matConcrete);
-                        antenna.position.set(0, h + antH / 2, 0);
-                        building.add(antenna);
-                    }
+                    const localTex = windowTex.clone();
+                    localTex.repeat.set(1, h / 10);
+                    localTex.needsUpdate = true;
+                    const matWall = new THREE.MeshLambertMaterial({ map: localTex });
+
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [matWall, matWall, matConcrete, matConcrete, matWall, matWall]);
+                    mesh.castShadow = true;
+                    mesh.position.y = h / 2;
+                    building.add(mesh);
+
+                    const antH = 5 + Math.random() * 15;
+                    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, antH, 4), matConcrete);
+                    antenna.position.set(0, h + antH / 2, 0);
+                    building.add(antenna);
                 } else {
                     // SMALL HOUSE
                     w = 10 + Math.random() * 8;
                     d = 10 + Math.random() * 8;
                     h = 8 + Math.random() * 8;
 
-                    if (loadedModels.house) {
-                        const clone = loadedModels.house.clone();
-                        const scaleFactor = h / 12; // Vary size
-                        clone.scale.copy(loadedModels.house.scale).multiplyScalar(scaleFactor);
-                        clone.rotation.y = Math.random() * Math.PI * 2;
-                        building.add(clone);
-                    } else {
-                        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matConcrete);
-                        mesh.castShadow = true;
-                        mesh.position.y = h / 2;
-                        building.add(mesh);
-                        const roof = new THREE.Mesh(new THREE.ConeGeometry(w * 0.8, w * 0.5, 4), matRoof);
-                        roof.position.y = h + w * 0.25;
-                        roof.rotation.y = Math.PI / 4;
-                        building.add(roof);
-                    }
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matConcrete);
+                    mesh.castShadow = true;
+                    mesh.position.y = h / 2;
+                    building.add(mesh);
+
+                    // Roof
+                    const roof = new THREE.Mesh(new THREE.ConeGeometry(w * 0.8, w * 0.5, 4), matRoof);
+                    roof.position.y = h + w * 0.25;
+                    roof.rotation.y = Math.PI / 4;
+                    building.add(roof);
                 }
 
                 building.position.set(x, y, z);
