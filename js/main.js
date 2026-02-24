@@ -7,7 +7,7 @@ import { initNetwork } from './network.js';
 import { updateFPS, updateHealthBar, updateWeaponUI, updateAmmoDisplay, updateCrosshair, updateRadar } from './ui.js';
 import { createPlayer, createEnemy, spawnAntiAirs, updatePlayer, updateEnemies, updateAntiAirs, updateBullets, updateParticles, updateDebris, updateRemotePlayers, tryPlayerShoot, createRemotePlayer, spawnPowerup, updatePowerups } from './entities.js';
 import { AIRCRAFT_TYPES } from './constants.js';
-import { createBombSight } from './models.js';
+import { createBombSight, preloadModels } from './models.js';
 import { getTerrainHeight } from './utils.js';
 
 // Global access for HTML buttons
@@ -95,10 +95,10 @@ window.restartGame = function () {
 };
 
 // Start
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     console.log('Game Initializing...');
     try {
-        init();
+        await init();
         console.log('Game Initialized.');
     } catch (e) {
         console.error('Init Failed:', e);
@@ -106,7 +106,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function init() {
+async function init() {
+    console.log('Preloading 3D Models...');
+    await preloadModels();
+
     console.log('Initializing Graphics...');
     initGraphics();
 

@@ -1,4 +1,44 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// --- 3D Model Preloading ---
+const loadedModels = {};
+const gltfLoader = new GLTFLoader();
+
+export function preloadModels() {
+    return new Promise((resolve) => {
+        gltfLoader.load(
+            'models/wwii_soviet_plane_with_interior.glb',
+            (gltf) => {
+                const model = gltf.scene;
+                // Auto-scale to fit game size
+                const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 150 / maxDim; // Balanced game size
+                model.scale.set(scale, scale, scale);
+                // Center the model
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center.multiplyScalar(scale));
+                // Enable shadows
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                loadedModels.fighter = model;
+                console.log('Fighter 3D model loaded!');
+                resolve();
+            },
+            undefined,
+            (err) => {
+                console.warn('Fighter model load failed, using fallback:', err);
+                resolve();
+            }
+        );
+    });
+}
 
 export function addAfterburner(group, zPos, scale) {
     const flameCore = new THREE.ConeGeometry(0.35 * scale, 3 * scale, 8);
@@ -19,6 +59,18 @@ export function addAfterburner(group, zPos, scale) {
 }
 
 export function createFighterMesh(mainColor, wingColor) {
+    // Use loaded 3D model if available
+    if (loadedModels.fighter) {
+        const clone = loadedModels.fighter.clone();
+        clone.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material = child.material.clone();
+            }
+        });
+        return clone;
+    }
+
+    // Fallback: procedural geometry
     const group = new THREE.Group();
     const matBody = new THREE.MeshStandardMaterial({ color: mainColor, metalness: 0.7, roughness: 0.3 });
     const matWing = new THREE.MeshStandardMaterial({ color: wingColor, metalness: 0.6, roughness: 0.4 });
