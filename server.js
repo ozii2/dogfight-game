@@ -73,6 +73,25 @@ io.on('connection', (socket) => {
     let playerData = null;
 
     // --- LOBBY ---
+    // --- TEAM ASSIGNMENT ---
+    socket.on('getTeamAssignment', (data, callback) => {
+        const roomId = data.roomId || 'dogfight';
+        let blueCount = 0;
+        let redCount = 0;
+
+        const room = rooms.get(roomId);
+        if (room) {
+            room.players.forEach(p => {
+                if (p.team === 'blue') blueCount++;
+                else if (p.team === 'red') redCount++;
+            });
+        }
+
+        const canChoose = blueCount === redCount;
+        const assignedTeam = blueCount <= redCount ? 'blue' : 'red';
+        callback({ team: assignedTeam, blue: blueCount, red: redCount, canChoose });
+    });
+
     socket.on('getRooms', (callback) => {
         const roomList = [];
         rooms.forEach((room, id) => {
@@ -99,7 +118,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('joinRoom', (data, callback) => {
-        const { roomId, playerName, aircraftType } = data;
+        const { roomId, playerName, aircraftType, team } = data;
 
         let room = getRoom(roomId);
         if (!room) {
@@ -114,6 +133,21 @@ io.on('connection', (socket) => {
         // Leave previous room if any
         if (currentRoom) {
             leaveRoom(socket);
+        }
+
+        // Assign game team (blue/red) with auto-balance
+        let blueCount = 0, redCount = 0;
+        room.players.forEach(p => {
+            if (p.team === 'blue') blueCount++;
+            else if (p.team === 'red') redCount++;
+        });
+        let assignedTeam;
+        if (blueCount === redCount && (team === 'blue' || team === 'red')) {
+            // Teams are equal — respect the player's choice
+            assignedTeam = team;
+        } else {
+            // Teams are not equal — auto-assign to the smaller team
+            assignedTeam = blueCount <= redCount ? 'blue' : 'red';
         }
 
         // Assign team colors
@@ -133,6 +167,7 @@ io.on('connection', (socket) => {
             id: socket.id,
             name: playerName || 'Pilot_' + socket.id.substr(0, 4),
             aircraftType: aircraftType || 'fighter',
+            team: assignedTeam,
             color: teamColors[colorIdx],
             position: { x: 0, y: 150, z: 0 },
             rotation: { x: 0, y: 0, z: 0, w: 1 },
@@ -174,6 +209,7 @@ io.on('connection', (socket) => {
             success: true,
             playerId: socket.id,
             playerData: playerData,
+            assignedTeam: assignedTeam,
             existingPlayers: existingPlayers,
             antiAirs: room.antiAirs
         });
@@ -238,6 +274,9 @@ io.on('connection', (socket) => {
         const target = currentRoom.players.get(targetId);
 
         if (!target || !target.alive) return;
+
+        // Friendly fire prevention
+        if (playerData && target.team && playerData.team === target.team) return;
 
         target.health -= (damage || 1);
 
@@ -370,7 +409,7 @@ setInterval(() => {
     rooms.forEach((room) => {
         const leaderboard = [];
         room.players.forEach((p, id) => {
-            leaderboard.push({ id, name: p.name, score: p.score, alive: p.alive });
+            leaderboard.push({ id, name: p.name, score: p.score, alive: p.alive, team: p.team });
         });
         leaderboard.sort((a, b) => b.score - a.score);
         io.to(room.id).emit('leaderboard', leaderboard);

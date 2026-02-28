@@ -1,3 +1,8 @@
+export const TEAMS = {
+    blue: { name: 'Mavi Takım', color: 0x3b82f6, cssColor: '#3b82f6', label: '🔵' },
+    red:  { name: 'Kırmızı Takım', color: 0xef4444, cssColor: '#ef4444', label: '🔴' }
+};
+
 export const SYNC_RATE = 100; // ms between updates (10 Hz) for better stability
 export const KILL_STREAK_TIMEOUT = 3000;
 

@@ -1,17 +1,43 @@
 import * as THREE from 'three';
-import { state, setGameStarted, setPlayer } from './state.js';
+import { state, setGameStarted, setPlayer, setTeam } from './state.js';
 import { initGraphics, onWindowResize, addShake } from './graphics.js';
 import { initInput } from './input.js';
 import { initAudio } from './audio.js';
 import { initNetwork } from './network.js';
 import { updateFPS, updateHealthBar, updateWeaponUI, updateAmmoDisplay, updateCrosshair, updateRadar } from './ui.js';
 import { createPlayer, createEnemy, spawnAntiAirs, updatePlayer, updateEnemies, updateAntiAirs, updateBullets, updateParticles, updateDebris, updateRemotePlayers, tryPlayerShoot, createRemotePlayer, spawnPowerup, updatePowerups } from './entities.js';
-import { AIRCRAFT_TYPES } from './constants.js';
+import { AIRCRAFT_TYPES, TEAMS } from './constants.js';
 import { createBombSight, preloadModels } from './models.js';
 import { getTerrainHeight } from './utils.js';
 
 // Global access for HTML buttons
-// Global access for HTML buttons
+window.confirmTeam = function () {
+    const teamData = TEAMS[state.team] || TEAMS.blue;
+    document.getElementById('team-select').style.display = 'none';
+    document.getElementById('aircraft-select').style.display = 'flex';
+
+    // Theme the aircraft select header with team color
+    const label = document.getElementById('aircraft-team-label');
+    if (label) {
+        label.textContent = `${teamData.label} ${teamData.name.toUpperCase()}`;
+        label.style.color = teamData.cssColor;
+    }
+};
+
+window.chooseTeam = function (teamKey) {
+    setTeam(teamKey);
+    const teamData = TEAMS[teamKey] || TEAMS.blue;
+    document.getElementById('team-select').style.display = 'none';
+    document.getElementById('aircraft-select').style.display = 'flex';
+
+    // Theme the aircraft select header with team color
+    const label = document.getElementById('aircraft-team-label');
+    if (label) {
+        label.textContent = `${teamData.label} ${teamData.name.toUpperCase()}`;
+        label.style.color = teamData.cssColor;
+    }
+};
+
 window.selectAircraft = function (type) {
     console.log('selectAircraft called with:', type);
     const selectedType = AIRCRAFT_TYPES[type];
@@ -44,6 +70,7 @@ window.selectAircraft = function (type) {
             roomId: document.getElementById('roomNameInput').value || 'dogfight',
             playerName: state.playerName,
             aircraftType: type,
+            team: state.team || 'blue',
             color: { main: selectedType.mainColor, wing: selectedType.wingColor }
         };
         state.lastJoinData = joinData;
@@ -51,6 +78,10 @@ window.selectAircraft = function (type) {
         state.socket.emit('joinRoom', joinData, (response) => {
             if (response.success) {
                 console.log('Joined room successfully');
+                // Confirm server-assigned team (may differ from client preference)
+                if (response.assignedTeam) {
+                    setTeam(response.assignedTeam);
+                }
                 // Initialize existing players
                 if (response.existingPlayers) {
                     Object.entries(response.existingPlayers).forEach(([id, data]) => {

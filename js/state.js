@@ -32,6 +32,7 @@ export const state = {
     myPlayerId: null,
     playerName: 'Pilot',
     roomId: 'dogfight',
+    team: null, // 'blue' | 'red'
 
     // Assets/Env
     terrain: null,
@@ -56,3 +57,4 @@ export function setRenderer(r) { state.renderer = r; }
 export function setPlayer(p) { state.player = p; }
 export function setSocket(s) { state.socket = s; }
 export function setGameStarted(v) { state.gameStarted = v; }
+export function setTeam(t) { state.team = t; }

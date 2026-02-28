@@ -675,6 +675,8 @@ export function updateBullets(dt) {
             if (state.isMultiplayer && state.socket) {
                 state.remotePlayers.forEach((rp, rpId) => {
                     if (!rp.mesh) return;
+                    // Friendly fire prevention
+                    if (rp.data && rp.data.team && state.team && rp.data.team === state.team) return;
                     const dist = b.mesh.position.distanceTo(rp.mesh.position);
                     if (dist < 15) {
                         // Hit!
@@ -787,21 +789,32 @@ export function gameOver(msg) {
 export function createRemotePlayer(id, data) {
     if (state.remotePlayers.has(id)) return;
 
-    const color = data.color || { main: 0xcccccc, wing: 0x888888 };
+    // Determine color by team
+    const isTeammate = data.team && state.team && data.team === state.team;
+    let color;
+    if (data.team === 'blue') {
+        color = { main: 0x3b82f6, wing: 0x1d4ed8 };
+    } else if (data.team === 'red') {
+        color = { main: 0xef4444, wing: 0xb91c1c };
+    } else {
+        color = data.color || { main: 0xcccccc, wing: 0x888888 };
+    }
     const mesh = createJetMesh(color.main, color.wing, data.aircraftType || 'fighter');
 
-    // Name tag
+    // Name tag (green for teammates, red for enemies)
+    const nameColor = isTeammate ? '#4ade80' : '#ff6b6b';
+    const teamLabel = data.team === 'blue' ? '🔵 ' : data.team === 'red' ? '🔴 ' : '';
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillStyle = isTeammate ? 'rgba(0,40,0,0.7)' : 'rgba(40,0,0,0.7)';
     ctx.roundRect(0, 0, 256, 64, 8);
     ctx.fill();
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 28px sans-serif';
+    ctx.fillStyle = nameColor;
+    ctx.font = 'bold 24px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(data.name || 'Pilot', 128, 42);
+    ctx.fillText(teamLabel + (data.name || 'Pilot'), 128, 42);
 
     const texture = new THREE.CanvasTexture(canvas);
     const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { state, setPlayer } from './state.js';
-import { AIRCRAFT_TYPES } from './constants.js';
+import { state, setPlayer, setTeam } from './state.js';
+import { AIRCRAFT_TYPES, TEAMS } from './constants.js';
 import { createRemotePlayer, removeRemotePlayer, spawnAntiAirs, createExplosion, createDebris, registerKill } from './entities.js';
 import { createBulletMesh } from './models.js';
 import { updateHealthBar, showKillFeed, updateScore } from './ui.js';
@@ -89,20 +89,60 @@ function setupSocketEvents() {
 
         if (state.gameStarted && state.lastJoinData) {
             console.log('Rejoining active game...');
-            // Re-emit joinRoom
             socket.emit('joinRoom', state.lastJoinData, (response) => {
                 if (response.success) {
                     console.log('Rejoined room successfully after reconnect');
-                    // We might need to ensure our mesh is valid, but createPlayer logic handles that locally.
-                    // The server will broadcast playerJoined for us (as a new ID).
-                    // Other players handle this.
                 }
             });
         } else {
-            // Initial connect or manual refresh
-            document.getElementById('lobbyStatus').textContent = 'Bağlandı! Uçağını seç...';
-            document.getElementById('lobby-screen').style.display = 'none';
-            document.getElementById('aircraft-select').style.display = 'block';
+            // Request team assignment from server
+            const roomId = document.getElementById('roomNameInput').value || 'dogfight';
+            socket.emit('getTeamAssignment', { roomId }, (res) => {
+                const assignedTeam = res.team || 'blue';
+                setTeam(assignedTeam);
+
+                // Update player counts
+                document.getElementById('team-blue-count').textContent = res.blue || 0;
+                document.getElementById('team-red-count').textContent = res.red || 0;
+
+                if (res.canChoose) {
+                    // Teams are equal — let the player choose
+                    document.getElementById('team-select-subtitle').textContent = 'Takımını Seç!';
+                    document.getElementById('team-auto-container').style.display = 'none';
+                    document.getElementById('team-choose-container').style.display = 'block';
+                } else {
+                    // Teams are not equal — show auto-assigned card
+                    document.getElementById('team-select-subtitle').textContent = 'Takım Atama';
+                    document.getElementById('team-auto-container').style.display = 'block';
+                    document.getElementById('team-choose-container').style.display = 'none';
+
+                    // Update auto-assign card UI
+                    const teamData = TEAMS[assignedTeam];
+                    document.getElementById('team-icon').textContent = teamData.label;
+                    document.getElementById('team-name').textContent = teamData.name.toUpperCase();
+                    document.getElementById('team-name').style.color = teamData.cssColor;
+
+                    const card = document.getElementById('team-card');
+                    if (card) {
+                        card.style.borderColor = teamData.cssColor;
+                        card.style.boxShadow = `0 0 60px ${teamData.cssColor}40`;
+                    }
+                    const btn = document.querySelector('#team-card button');
+                    if (btn) {
+                        const isBlue = assignedTeam === 'blue';
+                        btn.style.background = isBlue
+                            ? 'linear-gradient(135deg,#3b82f6,#1d4ed8)'
+                            : 'linear-gradient(135deg,#ef4444,#b91c1c)';
+                    }
+                    if (res.blue !== undefined) {
+                        document.getElementById('team-counts').textContent =
+                            `Mavi: ${res.blue} oyuncu | Kırmızı: ${res.red} oyuncu`;
+                    }
+                }
+
+                document.getElementById('lobby-screen').style.display = 'none';
+                document.getElementById('team-select').style.display = 'flex';
+            });
         }
     });
 
@@ -114,7 +154,7 @@ function setupSocketEvents() {
 
     socket.on('playerJoined', (data) => {
         if (data.id !== state.myPlayerId) {
-            createRemotePlayer(data.id, data.data);
+            createRemotePlayer(data.id, data.data); // data.data includes team
         }
     });
 
@@ -261,11 +301,12 @@ function setupSocketEvents() {
         if (data && data.length > 0) {
             lbDiv.style.display = 'block';
         }
-        lbList.innerHTML = data.slice(0, 3).map((p, i) => {
+        lbList.innerHTML = data.slice(0, 5).map((p, i) => {
             const isMe = p.id === state.myPlayerId;
+            const teamDot = p.team === 'blue' ? '🔵' : p.team === 'red' ? '🔴' : '';
             return `<div class="lb-row ${isMe ? 'me' : ''}">
                 <span class="lb-rank">${i + 1}.</span>
-                <span class="lb-name">${p.name}</span>
+                <span class="lb-name">${teamDot} ${p.name}</span>
                 <span class="lb-score">${p.score}</span>
             </div>`;
         }).join('');

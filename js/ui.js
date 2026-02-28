@@ -218,10 +218,12 @@ export function updateRadar() {
         });
     }
 
-    // Remote Players (Blue)
+    // Remote Players (green = teammate, red = enemy)
     if (state.remotePlayers) {
         state.remotePlayers.forEach(rp => {
-            if (rp.mesh) drawBlip(rp.mesh.position.x, rp.mesh.position.z, '#00ffff', 4);
+            if (!rp.mesh) return;
+            const isTeammate = rp.data && rp.data.team && state.team && rp.data.team === state.team;
+            drawBlip(rp.mesh.position.x, rp.mesh.position.z, isTeammate ? '#00ff88' : '#ff0000', 4);
         });
     }
 

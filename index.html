@@ -580,9 +580,125 @@
         </div>
     </div>
 
+    <!-- TEAM ASSIGNMENT SCREEN -->
+    <style>
+        .team-choose-card {
+            width: 280px;
+            padding: 36px 28px;
+            border-radius: 20px;
+            border: 2px solid rgba(100, 116, 139, 0.3);
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+        }
+
+        .team-choose-card:hover {
+            transform: translateY(-10px) scale(1.04);
+        }
+
+        .team-choose-card.blue-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 50px rgba(59, 130, 246, 0.35);
+        }
+
+        .team-choose-card.red-card:hover {
+            border-color: #ef4444;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 50px rgba(239, 68, 68, 0.35);
+        }
+
+        .team-choose-card .team-card-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .team-choose-card .team-card-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+    <div id="team-select"
+        style="display:none;position:fixed;inset:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a2e 0%,#1a1a4e 30%,#0d1b3e 60%,#0a0a2e 100%);z-index:10001;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;box-sizing:border-box;">
+        <h1
+            style="font-size:42px;color:#e2e8f0;margin-bottom:8px;text-transform:uppercase;letter-spacing:8px;font-weight:300;text-shadow:0 0 40px rgba(56,189,248,0.5);">
+            ✈ Dogfight 3D</h1>
+        <div id="team-select-subtitle"
+            style="font-size:15px;color:#64748b;margin-bottom:50px;letter-spacing:4px;text-transform:uppercase;">Takım
+            Atama</div>
+
+        <!-- MODE 1: Auto-assigned (single card, shown when teams are NOT equal) -->
+        <div id="team-auto-container">
+            <div id="team-card"
+                style="width:340px;padding:40px 32px;border-radius:20px;border:2px solid #3b82f6;background:linear-gradient(180deg,rgba(30,41,59,0.9) 0%,rgba(15,23,42,0.95) 100%);box-shadow:0 0 60px rgba(59,130,246,0.25);">
+                <div id="team-icon" style="font-size:72px;margin-bottom:16px;">🔵</div>
+                <div id="team-name"
+                    style="font-size:28px;font-weight:700;color:#3b82f6;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">
+                    MAVİ TAKIM</div>
+                <div id="team-counts" style="font-size:14px;color:#64748b;margin-bottom:28px;letter-spacing:1px;"></div>
+                <div style="font-size:13px;color:#94a3b8;margin-bottom:28px;line-height:1.6;">Sunucu seni otomatik
+                    olarak en az oyuncusu olan takıma atadı. Takım arkadaşlarına ateş edemezsin.</div>
+                <button onclick="window.confirmTeam()"
+                    style="width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border:none;border-radius:10px;color:white;font-size:16px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;"
+                    onmouseover="this.style.boxShadow='0 0 30px rgba(59,130,246,0.5)';this.style.transform='scale(1.03)'"
+                    onmouseout="this.style.boxShadow='none';this.style.transform='scale(1)'">
+                    DEVAM →
+                </button>
+            </div>
+        </div>
+
+        <!-- MODE 2: Player can choose (two cards, shown when teams ARE equal) -->
+        <div id="team-choose-container" style="display:none;">
+            <div style="font-size:14px;color:#94a3b8;margin-bottom:30px;line-height:1.6;">Takımlar eşit sayıda!
+                İstediğin takımı seçebilirsin.</div>
+            <div style="display:flex;gap:30px;justify-content:center;flex-wrap:wrap;">
+                <!-- Blue Card -->
+                <div class="team-choose-card blue-card" onclick="window.chooseTeam('blue')">
+                    <div style="font-size:72px;margin-bottom:16px;">🔵</div>
+                    <div
+                        style="font-size:24px;font-weight:700;color:#3b82f6;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;">
+                        MAVİ TAKIM</div>
+                    <div style="font-size:13px;color:#94a3b8;margin-bottom:24px;">Mavi takıma katıl</div>
+                    <button class="team-card-btn" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);"
+                        onmouseover="this.style.boxShadow='0 0 30px rgba(59,130,246,0.5)'"
+                        onmouseout="this.style.boxShadow='none'">
+                        SEÇ →
+                    </button>
+                </div>
+                <!-- Red Card -->
+                <div class="team-choose-card red-card" onclick="window.chooseTeam('red')">
+                    <div style="font-size:72px;margin-bottom:16px;">🔴</div>
+                    <div
+                        style="font-size:24px;font-weight:700;color:#ef4444;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;">
+                        KIRMIZI TAKIM</div>
+                    <div style="font-size:13px;color:#94a3b8;margin-bottom:24px;">Kırmızı takıma katıl</div>
+                    <button class="team-card-btn" style="background:linear-gradient(135deg,#ef4444,#b91c1c);"
+                        onmouseover="this.style.boxShadow='0 0 30px rgba(239,68,68,0.5)'"
+                        onmouseout="this.style.boxShadow='none'">
+                        SEÇ →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:30px;display:flex;gap:40px;font-size:13px;color:#475569;">
+            <span>🔵 Mavi: <b id="team-blue-count" style="color:#3b82f6">0</b></span>
+            <span>🔴 Kırmızı: <b id="team-red-count" style="color:#ef4444">0</b></span>
+        </div>
+    </div>
+
     <!-- AIRCRAFT SELECTION SCREEN -->
     <div id="aircraft-select" style="display:none;">
         <h1>✈ Dogfight 3D</h1>
+        <div id="aircraft-team-label"
+            style="font-size:15px;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;color:#3b82f6;"></div>
         <div class="subtitle">Uçağını Seç</div>
         <div style="text-align:center;margin-bottom:20px;">
             <button id="invertControlsBtn"
