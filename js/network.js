@@ -3,7 +3,7 @@ import { state, setPlayer, setTeam } from './state.js';
 import { AIRCRAFT_TYPES, TEAMS } from './constants.js';
 import { createRemotePlayer, removeRemotePlayer, spawnAntiAirs, createExplosion, createDebris, registerKill } from './entities.js';
 import { createBulletMesh } from './models.js';
-import { updateHealthBar, showKillFeed, updateScore } from './ui.js';
+import { updateHealthBar, showKillFeed, updateScore, showDamageFlash, showKillNotification, updateTeamScore } from './ui.js';
 import { addShake } from './graphics.js';
 
 export function initNetwork() {
@@ -216,12 +216,7 @@ function setupSocketEvents() {
             state.player.maxHealth = data.maxHealth;
             updateHealthBar();
             addShake(0.5);
-            // Red flash via DOM
-            const v = document.getElementById('vignette');
-            if (v) {
-                v.style.boxShadow = 'inset 0 0 100px rgba(255,0,0,0.4)';
-                setTimeout(() => { v.style.boxShadow = 'inset 0 0 150px rgba(0,0,0,0.5)'; }, 200);
-            }
+            showDamageFlash();
         }
     });
 
@@ -230,16 +225,23 @@ function setupSocketEvents() {
 
         if (data.victimId === state.myPlayerId) {
             showKillFeed('ÖLDÜN! 3 saniye sonra yeniden doğacaksın...', '#ff0000');
+            addShake(2.0);
         }
 
         if (data.killerId === state.myPlayerId) {
             state.score += 100;
             updateScore();
             registerKill();
+            showKillNotification(100, 'KILL');
         }
 
         const rp = state.remotePlayers.get(data.victimId);
         if (rp && rp.mesh) rp.mesh.visible = false;
+    });
+
+    // Team score update from server
+    socket.on('teamScores', (data) => {
+        updateTeamScore(data.blue || 0, data.red || 0);
     });
 
     socket.on('playerRespawned', (data) => {

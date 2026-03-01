@@ -537,6 +537,32 @@
             box-shadow: 0 0 30px var(--glow-color);
             transform: scale(1.05);
         }
+
+        /* Respawn countdown – flex center */
+        #respawn-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #respawn-screen.active { display: flex !important; }
+
+        /* Game over screen – flex center */
+        #game-over {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #game-over.active { display: flex !important; }
+
+        /* Kill notification pop-up */
+        @keyframes killPop {
+            0%   { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0; }
+            20%  { transform: translateX(-50%) translateY(-24px) scale(1.1); opacity: 1; }
+            80%  { transform: translateX(-50%) translateY(-28px) scale(1); opacity: 1; }
+            100% { transform: translateX(-50%) translateY(-60px) scale(0.8); opacity: 0; }
+        }
     </style>
     <!-- Socket.io CDN -->
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
@@ -837,14 +863,87 @@
     <div id="crosshair">
         <div class="dot"></div>
     </div>
-    <div id="game-over" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:50;"></div>
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a2e,#1a1a4e);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;color:white;">
+        <div style="font-size:52px;margin-bottom:10px;">✈</div>
+        <div style="font-size:28px;letter-spacing:8px;font-weight:300;margin-bottom:8px;">DOGFIGHT 3D</div>
+        <div style="font-size:13px;color:#64748b;letter-spacing:4px;margin-bottom:40px;">3D MODELLER YÜKLENİYOR</div>
+        <div style="width:320px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">
+            <div id="loading-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#60a5fa);border-radius:3px;transition:width 0.4s ease;"></div>
+        </div>
+        <div id="loading-pct" style="font-size:14px;color:#60a5fa;margin-top:12px;letter-spacing:2px;">0%</div>
+    </div>
+
+    <!-- DAMAGE FLASH OVERLAY -->
+    <div id="damage-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:30;opacity:0;transition:opacity 0.05s;background:radial-gradient(ellipse at center,transparent 30%,rgba(220,0,0,0.7) 100%);"></div>
+
+    <!-- BOUNDARY WARNING -->
+    <div id="boundary-warning" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#ff4444;font-family:'Segoe UI',sans-serif;font-size:24px;font-weight:900;text-shadow:0 0 20px rgba(255,0,0,0.8),2px 2px 4px black;pointer-events:none;z-index:35;text-align:center;letter-spacing:2px;">
+        ⚠ SINIRLARA YAKLAŞIYORSUN! ⚠<br>
+        <span style="font-size:14px;font-weight:400;color:#ff8888;">Geri dön!</span>
+    </div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="game-over" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:50;font-family:'Segoe UI',sans-serif;color:white;display:none;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="text-align:center;max-width:480px;padding:40px;background:rgba(255,0,0,0.1);border:2px solid rgba(255,60,60,0.4);border-radius:20px;backdrop-filter:blur(10px);">
+            <div style="font-size:64px;margin-bottom:10px;">💥</div>
+            <div style="font-size:42px;font-weight:900;letter-spacing:6px;color:#ff4444;text-shadow:0 0 30px rgba(255,0,0,0.6);">GAME OVER</div>
+            <div id="go-cause" style="font-size:16px;color:#94a3b8;margin-top:8px;margin-bottom:28px;letter-spacing:1px;"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;">
+                <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:16px;">
+                    <div style="font-size:11px;color:#64748b;letter-spacing:2px;margin-bottom:4px;">SKOR</div>
+                    <div id="go-score" style="font-size:28px;font-weight:700;color:#fbbf24;">0</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:16px;">
+                    <div style="font-size:11px;color:#64748b;letter-spacing:2px;margin-bottom:4px;">ÖLDÜRME</div>
+                    <div id="go-kills" style="font-size:28px;font-weight:700;color:#4ade80;">0</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:14px;justify-content:center;">
+                <button id="go-respawn-btn" onclick="window.respawnFromGameOver()" style="padding:12px 28px;background:linear-gradient(135deg,#3b82f6,#2563eb);border:none;border-radius:10px;color:white;font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">↺ TEKRAR OYNA</button>
+                <button onclick="location.reload()" style="padding:12px 28px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">⟵ ANA MENÜ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESPAWN COUNTDOWN (singleplayer) -->
+    <div id="respawn-screen" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:45;font-family:'Segoe UI',sans-serif;color:white;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+        <div style="text-align:center;">
+            <div style="font-size:22px;color:#94a3b8;letter-spacing:3px;margin-bottom:12px;">YENIDEN CANLANIYORSUN</div>
+            <div id="respawn-countdown" style="font-size:80px;font-weight:900;color:#60a5fa;text-shadow:0 0 30px rgba(96,165,250,0.6);">3</div>
+        </div>
+    </div>
+
+    <!-- KILL NOTIFICATION (+100 KILL) -->
+    <div id="kill-notify" style="display:none;position:fixed;top:35%;left:50%;transform:translateX(-50%) translateY(0) scale(0.5);font-family:'Segoe UI',Impact,sans-serif;font-size:52px;font-weight:900;color:#fbbf24;text-shadow:0 0 25px rgba(251,191,36,0.9),2px 2px 6px rgba(0,0,0,0.8);pointer-events:none;z-index:25;opacity:0;transition:opacity 0.15s,transform 0.15s;text-align:center;white-space:nowrap;"></div>
+
+    <!-- SPEED / ALTITUDE DISPLAY -->
+    <div id="speed-alt-display" style="display:none;position:fixed;bottom:60px;left:50%;transform:translateX(-50%);font-family:'Courier New',monospace;color:rgba(255,255,255,0.85);font-size:13px;font-weight:bold;text-shadow:1px 1px 3px black;pointer-events:none;z-index:15;text-align:center;letter-spacing:1px;background:rgba(0,0,0,0.35);padding:6px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">
+        <span id="speed-val">SPD 0</span>&nbsp;&nbsp;&nbsp;<span id="alt-val">ALT 0</span>
+    </div>
+
+    <!-- TEAM SCORE (multiplayer) -->
+    <div id="team-score-display" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);font-family:'Segoe UI',sans-serif;font-size:15px;font-weight:700;text-shadow:1px 1px 3px black;pointer-events:none;z-index:15;display:none;gap:20px;align-items:center;">
+        <span style="color:#3b82f6;">🔵 <span id="score-blue">0</span></span>
+        <span style="color:#64748b;font-size:12px;">VS</span>
+        <span style="color:#ef4444;"><span id="score-red">0</span> 🔴</span>
+    </div>
+
+    <!-- MISSILE RELOAD INDICATOR -->
+    <div id="missile-reload-bar" style="display:none;position:fixed;bottom:55px;left:20px;width:200px;font-family:'Segoe UI',sans-serif;font-size:11px;color:#94a3b8;z-index:15;pointer-events:none;">
+        <div style="margin-bottom:3px;letter-spacing:1px;">FÜZE YENİLEME</div>
+        <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden;">
+            <div id="missile-reload-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width 0.1s;"></div>
+        </div>
+    </div>
+
     <div id="error-log"
         style="display:none;position:fixed;top:0;left:0;background:rgba(255,0,0,.5);color:white;padding:8px;font-family:monospace;z-index:999;max-height:200px;overflow:auto">
     </div>
     <div id="vignette"></div>
     <div id="speed-lines"></div>
     <div id="kill-streak"></div>
-    <div id="controls-hint">W/S: Hız | Sol Ok/Sağ Ok: Yatay | SOL TIK/SPACE: Ateş | 1/2: Silah | C: Kamera
+    <div id="controls-hint">W/S: Hız | Ok: Manevra | SPACE: Ateş | Shift: Afterburner | F: Flare | 1/2: Silah | C: Kamera | M: Harita | Tab: Stats | ESC: Ayarlar
     </div>
 
     <div id="instructions"
@@ -854,6 +953,78 @@
         <div>W/S: Speed Control</div>
         <div>A/D: Roll / Yaw</div>
         <div>Left Click / Space: Fire</div>
+    </div>
+
+    <!-- AFTERBURNER DISPLAY -->
+    <div id="afterburner-display" style="display:none;position:fixed;bottom:90px;right:20px;font-family:'Courier New',monospace;color:rgba(255,160,50,0.9);font-size:11px;font-weight:bold;text-shadow:1px 1px 2px black;pointer-events:none;z-index:15;text-align:right;">
+        <div style="letter-spacing:1px;margin-bottom:3px;">AFTERBURNER</div>
+        <div style="width:120px;height:5px;background:rgba(255,255,255,0.12);border-radius:3px;overflow:hidden;margin-left:auto;">
+            <div id="afterburner-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#f97316,#fbbf24);transition:width 0.12s;"></div>
+        </div>
+        <div id="afterburner-status" style="font-size:10px;color:#4ade80;letter-spacing:1px;margin-top:2px;">HAZIR</div>
+    </div>
+
+    <!-- FLARE COUNT -->
+    <div id="flare-display" style="display:none;position:fixed;bottom:110px;left:20px;font-family:'Courier New',monospace;color:rgba(255,220,80,0.9);font-size:12px;font-weight:bold;text-shadow:1px 1px 2px black;pointer-events:none;z-index:15;">
+        FLARE: <span id="flare-count">3</span>
+    </div>
+
+    <!-- LOCK-ON BOX (positioned dynamically by JS) -->
+    <div id="lockon-box" style="display:none;position:fixed;pointer-events:none;z-index:20;border:2px solid #ff8800;box-sizing:border-box;">
+        <div id="lockon-label" style="position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-family:'Courier New',monospace;font-size:11px;color:#ff8800;letter-spacing:1px;white-space:nowrap;">LOCK...</div>
+        <div id="lockon-progress-bar" style="position:absolute;bottom:-5px;left:0;height:3px;width:0%;background:#ff8800;"></div>
+    </div>
+
+    <!-- SETTINGS PANEL (ESC) -->
+    <div id="settings-panel" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:1000;font-family:'Segoe UI',sans-serif;color:white;align-items:center;justify-content:center;">
+        <div style="background:rgba(10,15,35,0.97);border:1px solid rgba(100,116,139,0.4);border-radius:16px;padding:36px;width:360px;max-width:90vw;">
+            <div style="font-size:18px;font-weight:700;letter-spacing:3px;margin-bottom:24px;text-transform:uppercase;color:#e2e8f0;">⚙ AYARLAR</div>
+            <div style="margin-bottom:18px;">
+                <label style="display:block;font-size:12px;color:#94a3b8;letter-spacing:1px;margin-bottom:6px;">SES SEVİYESİ</label>
+                <input id="setting-volume" type="range" min="0" max="1" step="0.05" value="0.5" style="width:100%;accent-color:#3b82f6;">
+            </div>
+            <div style="margin-bottom:18px;">
+                <label style="display:block;font-size:12px;color:#94a3b8;letter-spacing:1px;margin-bottom:6px;">GÜN HIZI</label>
+                <input id="setting-dayspeed" type="range" min="0" max="2" step="0.1" value="0.4" style="width:100%;accent-color:#3b82f6;">
+            </div>
+            <div style="margin-bottom:24px;display:flex;align-items:center;gap:12px;">
+                <input id="setting-bloom" type="checkbox" checked style="width:16px;height:16px;accent-color:#3b82f6;">
+                <label for="setting-bloom" style="font-size:13px;color:#e2e8f0;cursor:pointer;">Bloom Efekti (Işıma)</label>
+            </div>
+            <button onclick="window.closeSettings()" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);border:none;border-radius:8px;color:white;font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer;text-transform:uppercase;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">KAPAT [ESC]</button>
+        </div>
+    </div>
+
+    <!-- STATS OVERLAY (Tab) -->
+    <div id="stats-overlay" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(8,10,28,0.93);border:1px solid rgba(100,116,139,0.35);border-radius:16px;padding:28px 36px;z-index:200;font-family:'Segoe UI',monospace;color:white;min-width:280px;pointer-events:none;">
+        <div style="font-size:15px;font-weight:700;letter-spacing:3px;margin-bottom:18px;text-transform:uppercase;color:#fbbf24;text-align:center;">📊 OTURUM İSTATİSTİKLERİ</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;">
+                <div style="font-size:11px;color:#64748b;letter-spacing:2px;margin-bottom:4px;">ÖLDÜRME</div>
+                <div id="stat-kills" style="font-size:26px;font-weight:700;color:#4ade80;">0</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;">
+                <div style="font-size:11px;color:#64748b;letter-spacing:2px;margin-bottom:4px;">ÖLÜM</div>
+                <div id="stat-deaths" style="font-size:26px;font-weight:700;color:#f87171;">0</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;">
+                <div style="font-size:11px;color:#64748b;letter-spacing:2px;margin-bottom:4px;">SKOR</div>
+                <div id="stat-score" style="font-size:26px;font-weight:700;color:#fbbf24;">0</div>
+            </div>
+            <div style="text-align:center;background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;">
+                <div style="font-size:11px;color:#64748b;letter-spacing:2px;margin-bottom:4px;">SÜRE</div>
+                <div id="stat-time" style="font-size:26px;font-weight:700;color:#60a5fa;">0:00</div>
+            </div>
+        </div>
+        <div style="text-align:center;margin-top:12px;font-size:11px;color:#475569;letter-spacing:1px;">[TAB] kapat</div>
+    </div>
+
+    <!-- FULLSCREEN TACTICAL MAP (M) -->
+    <div id="fullmap-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.82);z-index:500;align-items:center;justify-content:center;" onclick="if(event.target===this)window.closeFullMap()">
+        <div style="position:relative;">
+            <div style="font-size:13px;letter-spacing:3px;color:#4ade80;text-align:center;margin-bottom:10px;font-family:monospace;text-shadow:0 0 10px rgba(0,255,0,0.4);">TAKTİK HARİTA &nbsp;&nbsp; [M] Kapat</div>
+            <canvas id="fullmap-canvas" width="580" height="580" style="border:2px solid rgba(0,255,0,0.35);border-radius:8px;box-shadow:0 0 40px rgba(0,255,0,0.15);display:block;"></canvas>
+        </div>
     </div>
 
     <!-- Main Module Entry Point -->

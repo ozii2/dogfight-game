@@ -1,16 +1,23 @@
 import * as THREE from 'three';
 import { state, setGameStarted, setPlayer, setTeam } from './state.js';
-import { initGraphics, onWindowResize, addShake } from './graphics.js';
+import { initGraphics, onWindowResize, addShake, updateEnvironment } from './graphics.js';
 import { initInput } from './input.js';
-import { initAudio } from './audio.js';
+import { startEngineSound, updateEngineSound } from './audio.js';
 import { initNetwork } from './network.js';
-import { updateFPS, updateHealthBar, updateWeaponUI, updateAmmoDisplay, updateCrosshair, updateRadar } from './ui.js';
-import { createPlayer, createEnemy, spawnAntiAirs, updatePlayer, updateEnemies, updateAntiAirs, updateBullets, updateParticles, updateDebris, updateRemotePlayers, tryPlayerShoot, createRemotePlayer, spawnPowerup, updatePowerups } from './entities.js';
+import { initUI, updateFPS, updateHealthBar, updateWeaponUI, updateAmmoDisplay, updateCrosshair, updateRadar, closeSettings } from './ui.js';
+import { createPlayer, createEnemy, spawnAntiAirs, updatePlayer, updateEnemies, updateAntiAirs, updateBullets, updateParticles, updateDebris, updateRemotePlayers, tryPlayerShoot, createRemotePlayer, spawnPowerup, updatePowerups, updateTrailParticles, updateFlares, updateLockOn } from './entities.js';
 import { AIRCRAFT_TYPES, TEAMS } from './constants.js';
 import { createBombSight, preloadModels } from './models.js';
 import { getTerrainHeight } from './utils.js';
 
 // Global access for HTML buttons
+window.closeSettings = closeSettings;
+window.closeFullMap = function () {
+    state.showMap = false;
+    const o = document.getElementById('fullmap-overlay');
+    if (o) o.style.display = 'none';
+};
+
 window.confirmTeam = function () {
     const teamData = TEAMS[state.team] || TEAMS.blue;
     document.getElementById('team-select').style.display = 'none';
@@ -119,8 +126,16 @@ window.selectAircraft = function (type) {
         });
     } else {
         // Singleplayer setup
-        spawnAntiAirs(); // Local generation
+        spawnAntiAirs();
         for (let i = 0; i < 5; i++) createEnemy();
+        for (let i = 0; i < 5; i++) spawnPowerup();
+        // Respawn bots and powerups
+        setInterval(() => {
+            if (state.enemies.length < 8) createEnemy();
+        }, 20000);
+        setInterval(() => {
+            if (state.powerups.length < 6) spawnPowerup();
+        }, 15000);
     }
 };
 
@@ -140,12 +155,26 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+function setLoadingProgress(pct) {
+    const bar = document.getElementById('loading-bar');
+    const pctEl = document.getElementById('loading-pct');
+    if (bar) bar.style.width = pct + '%';
+    if (pctEl) pctEl.innerText = pct + '%';
+}
+
 async function init() {
     console.log('Preloading 3D Models...');
-    await preloadModels();
+    setLoadingProgress(5);
+
+    await preloadModels((pct) => {
+        setLoadingProgress(5 + Math.round(pct * 0.85));
+    });
+
+    setLoadingProgress(95);
 
     console.log('Initializing Graphics...');
     initGraphics();
+    initUI();
 
     console.log('Initializing Input...');
     console.log('Initializing Input...');
@@ -161,6 +190,18 @@ async function init() {
     state.bombSight = createBombSight();
     state.scene.add(state.bombSight);
     state.bombSight.visible = false;
+
+    setLoadingProgress(100);
+
+    // Hide loading screen with a short delay
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        setTimeout(() => {
+            loadingScreen.style.transition = 'opacity 0.5s';
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
+        }, 300);
+    }
 
     // Start Loop
     requestAnimationFrame(animate);
@@ -186,12 +227,24 @@ function animate(time) {
         // Update Entities
         updatePlayer(dt);
         updateBullets(dt);
+        updateTrailParticles(dt);
+        updateFlares(dt);
+        updateLockOn(dt);
         updateEnemies(dt);
         updateRemotePlayers(dt);
         updateParticles(dt);
         updateDebris(dt);
         updateAntiAirs(dt);
         updatePowerups(dt);
+        updateEnvironment(dt);
+
+        // Engine sound pitch based on speed
+        if (state.player && state.player.aircraftType) {
+            startEngineSound(); // safe to call repeatedly (no-op if already running)
+            const baseSpd = state.player.aircraftType.speed;
+            const currSpd = state.keys['KeyW'] ? baseSpd * 1.4 : (state.keys['KeyS'] ? baseSpd * 0.6 : baseSpd);
+            updateEngineSound(currSpd, baseSpd * 1.4);
+        }
 
         // Camera Follow
         if (state.player && state.camera) {
@@ -263,7 +316,11 @@ function animate(time) {
         // Crosshair
         updateCrosshair();
 
-        state.renderer.render(state.scene, state.camera);
+        if (state.composer) {
+            state.composer.render();
+        } else {
+            state.renderer.render(state.scene, state.camera);
+        }
     } catch (e) {
         console.error('Game Loop Error:', e);
         // Throwing here would stop 'requestAnimationFrame', which might be good to avoid log spam, 

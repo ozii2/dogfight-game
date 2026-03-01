@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check js/network.js 2>&1; node --check js/state.js 2>&1; node --check js/models.js 2>&1)"
+    ]
+  }
+}

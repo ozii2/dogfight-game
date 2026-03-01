@@ -18,6 +18,7 @@ export const state = {
     // Game Status
     gameStarted: false,
     isMultiplayer: false,
+    gameOverShown: false,
     lastTime: 0,
     lastSyncTime: 0,
     score: 0,
@@ -37,6 +38,55 @@ export const state = {
     // Assets/Env
     terrain: null,
     audioCtx: null,
+    waterMesh: null,
+    waterTime: 0,
+
+    // Post-processing
+    composer: null,
+
+    // Sky / Day-Night
+    skyUniforms: null,
+    sunLight: null,
+    hemiLight: null,
+    dayTime: 10.0,       // 0-24 game hours
+    daySpeed: 0.4,       // game hours per real second (~60s full cycle)
+    clouds: [],
+
+    // Afterburner
+    afterburnerActive: false,
+    afterburnerFuel: 1.0,
+    afterburnerCooldown: 0,
+
+    // Flares
+    flareAmmo: 3,
+    flareCooldown: 0,
+    activeFlares: [],
+
+    // Damage model
+    damageSmokes: [],
+
+    // Lock-on
+    lockOnTarget: null,
+    lockOnProgress: 0,
+
+    // Session stats
+    sessionKills: 0,
+    sessionDeaths: 0,
+    sessionStartTime: 0,
+
+    // Settings
+    settings: {
+        volume: 0.5,
+        mouseSensitivity: 1.0,
+        bloom: true,
+        quality: 'high',
+        daySpeed: 0.4
+    },
+
+    // UI overlay flags
+    showStats: false,
+    showMap: false,
+    showSettings: false,
 
     // Input state
     keys: {},

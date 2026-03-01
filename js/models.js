@@ -70,11 +70,19 @@ function loadFBXModel(path, key, targetSize) {
     });
 }
 
-export function preloadModels() {
+export function preloadModels(onProgress) {
+    let done = 0;
+    const total = 3;
+    function tick() {
+        done++;
+        if (onProgress) onProgress(Math.round((done / total) * 100));
+    }
+
+    const wrap = (p) => p.then(tick);
     return Promise.all([
-        loadModel('models/wwii_soviet_plane_with_interior.glb', 'fighter', 150),
-        loadModel('models/Rafael.gltf', 'attack', 40),
-        loadFBXModel('models/Bomber.fbx', 'bomber', 25)
+        wrap(loadModel('models/wwii_soviet_plane_with_interior.glb', 'fighter', 150)),
+        wrap(loadModel('models/Rafael.gltf', 'attack', 40)),
+        wrap(loadFBXModel('models/Bomber.fbx', 'bomber', 25))
     ]);
 }
 

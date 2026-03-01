@@ -2,6 +2,11 @@ import { state } from './state.js';
 
 let isAudioInit = false;
 
+// Engine sound nodes
+let engineOsc = null, engineGain = null, engineFilter = null;
+let missileWarningOsc = null, missileWarningGain = null;
+let warningActive = false;
+
 export function initAudio() {
     if (isAudioInit) return;
     try {
@@ -10,6 +15,72 @@ export function initAudio() {
     } catch (e) {
         console.warn('AudioContext not supported');
     }
+}
+
+export function startEngineSound() {
+    if (!isAudioInit || !state.audioCtx) return;
+    if (engineOsc) return;
+    const ctx = state.audioCtx;
+
+    // Very soft sine-wave rumble – barely audible background hum
+    engineOsc = ctx.createOscillator();
+    engineOsc.type = 'sine';
+    engineOsc.frequency.value = 48;
+
+    engineFilter = ctx.createBiquadFilter();
+    engineFilter.type = 'lowpass';
+    engineFilter.frequency.value = 80;
+    engineFilter.Q.value = 0.5;
+
+    engineGain = ctx.createGain();
+    engineGain.gain.value = 0.012; // very quiet
+
+    engineOsc.connect(engineFilter);
+    engineFilter.connect(engineGain);
+    engineGain.connect(ctx.destination);
+    engineOsc.start();
+}
+
+export function updateEngineSound(speed, maxSpeed) {
+    if (!isAudioInit || !state.audioCtx || !engineOsc) return;
+    const ctx = state.audioCtx;
+    const t = ctx.currentTime;
+    const ratio = Math.max(0.3, Math.min(1, speed / maxSpeed));
+
+    engineOsc.frequency.linearRampToValueAtTime(40 + ratio * 20, t + 0.3);
+    engineGain.gain.linearRampToValueAtTime(0.008 + ratio * 0.008, t + 0.3);
+}
+
+export function stopEngineSound() {
+    if (engineOsc) { try { engineOsc.stop(); } catch(e) {} engineOsc = null; }
+    engineGain = null; engineFilter = null;
+}
+
+export function playMissileWarning() {
+    if (!isAudioInit || !state.audioCtx || warningActive) return;
+    warningActive = true;
+    const ctx = state.audioCtx;
+    const now = ctx.currentTime;
+
+    missileWarningOsc = ctx.createOscillator();
+    missileWarningOsc.type = 'square';
+    missileWarningOsc.frequency.value = 880;
+
+    missileWarningGain = ctx.createGain();
+    missileWarningGain.gain.setValueAtTime(0, now);
+
+    // Rapid beep pattern
+    for (let i = 0; i < 6; i++) {
+        missileWarningGain.gain.setValueAtTime(0.12, now + i * 0.15);
+        missileWarningGain.gain.setValueAtTime(0, now + i * 0.15 + 0.07);
+    }
+
+    missileWarningOsc.connect(missileWarningGain);
+    missileWarningGain.connect(ctx.destination);
+    missileWarningOsc.start(now);
+    missileWarningOsc.stop(now + 1.0);
+
+    setTimeout(() => { warningActive = false; }, 1100);
 }
 
 export function playShootSound() {
@@ -131,6 +202,31 @@ export function playExplodeSound() {
     crackleGain.connect(ctx.destination);
     crackle.start(now);
     crackle.stop(now + 0.4);
+}
+
+export function playFlareSound() {
+    if (!isAudioInit || !state.audioCtx) return;
+    const ctx = state.audioCtx;
+    const now = ctx.currentTime;
+    const bufLen = Math.floor(ctx.sampleRate * 0.12);
+    const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-(i / bufLen) * 14);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 2800;
+    filter.Q.value = 0.8;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(now);
 }
 
 // Subtle "tick" sound (bullet hit)
