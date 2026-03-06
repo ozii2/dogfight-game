@@ -56,6 +56,14 @@ window.selectAircraft = function (type) {
     document.getElementById('aircraft-select').style.display = 'none';
     document.getElementById('hud').style.display = 'block';
 
+    // Show mobile controls on touch devices
+    if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) {
+        const mc = document.getElementById('mobile-controls');
+        if (mc) mc.style.display = 'block';
+        const wb = document.getElementById('mobile-weapon-btns');
+        if (wb && (type === 'attack' || type === 'bomber')) wb.style.display = 'flex';
+    }
+
     // Only show instructions if element exists
     const inst = document.getElementById('instructions');
     if (inst) inst.style.display = 'block';

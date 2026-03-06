@@ -89,6 +89,8 @@
             margin: 0;
             overflow: hidden;
             background-color: #87CEEB;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Vignette overlay */
@@ -556,6 +558,30 @@
         }
         #game-over.active { display: flex !important; }
 
+
+        /* Mobile canvas */
+        canvas { touch-action: none; }
+
+        /* Mobile responsive */
+        @media (max-width: 768px), (pointer: coarse) {
+            #hud { font-size: 12px; padding: 8px 10px; top: 10px; left: 10px; }
+            #radar-container { width: 120px; height: 120px; top: 10px; right: 10px; }
+            #health-bar-container { bottom: 215px; left: 50%; transform: translateX(-50%); width: 200px; }
+            #health-text { bottom: 243px; left: 50%; transform: translateX(-50%); }
+            #speed-alt-display { bottom: 215px; }
+            #missile-reload-bar { bottom: 255px; left: 50%; transform: translateX(-50%); }
+            #afterburner-display { bottom: 285px; right: 8px; }
+            #flare-display { bottom: 315px; left: 8px; }
+            #controls-hint { display: none; }
+            #kill-streak { font-size: 32px; }
+            #kill-notify { font-size: 36px; }
+            #aircraft-select h1 { font-size: 28px; letter-spacing: 4px; }
+            .aircraft-cards { gap: 16px; }
+            .aircraft-card { width: 240px; padding: 20px 16px; }
+            #lobby-screen h1 { font-size: 28px; }
+            #lobby-screen > div { width: 90vw; max-width: 350px; }
+        }
+
         /* Kill notification pop-up */
         @keyframes killPop {
             0%   { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0; }
@@ -953,6 +979,40 @@
         <div>W/S: Speed Control</div>
         <div>A/D: Roll / Yaw</div>
         <div>Left Click / Space: Fire</div>
+    </div>
+
+    <!-- MOBILE CONTROLS (shown only on touch devices) -->
+    <div id="mobile-controls" style="display:none;pointer-events:none;user-select:none;-webkit-user-select:none;">
+        <!-- LEFT: Virtual Joystick -->
+        <div id="joystick-zone" style="position:fixed;bottom:28px;left:20px;width:130px;height:130px;z-index:300;touch-action:none;pointer-events:all;">
+            <div id="joystick-base" style="width:130px;height:130px;background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.22);border-radius:50%;position:relative;box-shadow:0 4px 16px rgba(0,0,0,0.35);">
+                <div id="joystick-knob" style="width:52px;height:52px;background:rgba(255,255,255,0.38);border:2px solid rgba(255,255,255,0.65);border-radius:50%;position:absolute;top:39px;left:39px;box-shadow:0 3px 10px rgba(0,0,0,0.45);"></div>
+            </div>
+            <div style="position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.35);letter-spacing:2px;font-family:monospace;white-space:nowrap;">PITCH - ROLL</div>
+        </div>
+        <!-- RIGHT: Action Buttons -->
+        <div style="position:fixed;bottom:20px;right:14px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:300;touch-action:none;">
+            <div style="display:flex;gap:8px;">
+                <button id="btn-speedup"   style="width:56px;height:50px;border-radius:12px;background:rgba(59,130,246,0.45);border:2px solid rgba(59,130,246,0.7);color:white;font-size:11px;font-weight:800;font-family:monospace;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">HIZ+</button>
+                <button id="btn-speeddown" style="width:56px;height:50px;border-radius:12px;background:rgba(100,116,139,0.4);border:2px solid rgba(100,116,139,0.65);color:white;font-size:11px;font-weight:800;font-family:monospace;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">HIZ-</button>
+            </div>
+            <button id="btn-fire" style="width:86px;height:86px;border-radius:50%;background:rgba(220,38,38,0.75);border:3px solid rgba(239,68,68,0.9);color:white;font-size:13px;font-weight:900;font-family:monospace;letter-spacing:1px;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;box-shadow:0 0 20px rgba(220,38,38,0.4);text-shadow:0 1px 3px black;">ATES</button>
+            <div style="display:flex;gap:8px;">
+                <button id="btn-boost" style="width:56px;height:50px;border-radius:12px;background:rgba(249,115,22,0.45);border:2px solid rgba(249,115,22,0.75);color:white;font-size:10px;font-weight:800;font-family:monospace;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">BOOST</button>
+                <button id="btn-flare" style="width:56px;height:50px;border-radius:12px;background:rgba(251,191,36,0.35);border:2px solid rgba(251,191,36,0.65);color:white;font-size:10px;font-weight:800;font-family:monospace;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">FLARE</button>
+            </div>
+        </div>
+        <!-- CENTER-BOTTOM: Yaw + Camera -->
+        <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:300;touch-action:none;align-items:center;">
+            <button id="btn-yaw-left"  style="width:52px;height:52px;border-radius:12px;background:rgba(100,116,139,0.4);border:2px solid rgba(148,163,184,0.5);color:white;font-size:20px;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">&lt;</button>
+            <button id="btn-camera"    style="width:44px;height:44px;border-radius:10px;background:rgba(100,116,139,0.3);border:1px solid rgba(148,163,184,0.4);color:rgba(255,255,255,0.7);font-size:10px;font-family:monospace;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">CAM</button>
+            <button id="btn-yaw-right" style="width:52px;height:52px;border-radius:12px;background:rgba(100,116,139,0.4);border:2px solid rgba(148,163,184,0.5);color:white;font-size:20px;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">&gt;</button>
+        </div>
+        <!-- WEAPON SWITCH (for attack/bomber only) -->
+        <div id="mobile-weapon-btns" style="display:none;position:fixed;bottom:84px;left:50%;transform:translateX(-50%);gap:8px;z-index:300;touch-action:none;">
+            <button id="btn-weapon1" style="width:52px;height:42px;border-radius:10px;background:rgba(34,197,94,0.5);border:2px solid rgba(34,197,94,0.75);color:white;font-size:15px;font-weight:900;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">1</button>
+            <button id="btn-weapon2" style="width:52px;height:42px;border-radius:10px;background:rgba(100,116,139,0.45);border:2px solid rgba(100,116,139,0.65);color:white;font-size:15px;font-weight:900;touch-action:none;pointer-events:all;-webkit-tap-highlight-color:transparent;">2</button>
+        </div>
     </div>
 
     <!-- AFTERBURNER DISPLAY -->

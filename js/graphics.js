@@ -36,10 +36,11 @@ export function initGraphics() {
     camera.position.set(0, 50, 100);
     setCamera(camera);
 
+    const _isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
     const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    renderer.shadowMap.enabled = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, _isMobile ? 1.0 : 1.5));
+    renderer.shadowMap.enabled = !_isMobile;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
@@ -106,6 +107,12 @@ function setupPostProcessing(renderer, scene, camera) {
 
     const outputPass = new OutputPass();
     composer.addPass(outputPass);
+
+    // Disable bloom on mobile for performance
+    if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) {
+        bloomPass.enabled = false;
+        state.settings.bloom = false;
+    }
 
     state.composer = composer;
 }
